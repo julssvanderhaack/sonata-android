@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Sonata</string>
+
+    <!-- Biblioteca -->
+    <string name="tab_songs">Canciones</string>
+    <string name="tab_albums">Álbumes</string>
+    <string name="tab_artists">Artistas</string>
+    <string name="tab_folders">Carpetas</string>
+    <string name="tab_genres">Géneros</string>
+    <string name="search">Buscar</string>
+    <string name="search_hint">Canción, artista, álbum…</string>
+    <string name="close_search">Cerrar búsqueda</string>
+    <string name="clear">Borrar</string>
+    <string name="sort">Ordenar</string>
+    <string name="sort_title">Título</string>
+    <string name="sort_artist">Artista</string>
+    <string name="sort_album">Álbum</string>
+    <string name="sort_year">Año</string>
+    <string name="sort_duration">Duración</string>
+    <string name="sort_added">Añadidas recientemente</string>
+    <string name="shuffle_all">Aleatorio</string>
+    <string name="unknown_artist">Artista desconocido</string>
+    <string name="various_artists">Varios artistas</string>
+    <string name="volume_internal">Almacenamiento interno</string>
+    <string name="volume_sd">Tarjeta SD (%1$s)</string>
+    <string name="empty_title">No se ha encontrado música</string>
+    <string name="empty_none">El teléfono no tiene archivos de audio en el almacenamiento compartido.</string>
+    <string name="library_filters">Filtros</string>
+    <string name="rescan">Volver a buscar</string>
+    <string name="not_found">Ya no está en la biblioteca.</string>
+
+    <plurals name="songs">
+        <item quantity="one">%d canción</item>
+        <item quantity="other">%d canciones</item>
+    </plurals>
+    <plurals name="albums">
+        <item quantity="one">%d álbum</item>
+        <item quantity="other">%d álbumes</item>
+    </plurals>
+    <plurals name="empty_filtered">
+        <item quantity="one">Hay %d archivo de audio, pero los filtros lo ocultan.</item>
+        <item quantity="other">Hay %d archivos de audio, pero los filtros los ocultan todos.</item>
+    </plurals>
+
+    <!-- Reproducción -->
+    <string name="play">Reproducir</string>
+    <string name="pause">Pausa</string>
+    <string name="next">Siguiente</string>
+    <string name="previous">Anterior</string>
+    <string name="shuffle">Aleatorio</string>
+    <string name="repeat">Repetir</string>
+    <string name="now_playing">Sonando</string>
+    <string name="back">Atrás</string>
+
+    <!-- Permiso -->
+    <string name="permission_title">Tu música, en tu teléfono</string>
+    <string name="permission_text">Sonata necesita leer los archivos de audio para encontrar tus canciones. No sube nada a ningún sitio.</string>
+    <string name="permission_button">Permitir acceso a la música</string>
+
+    <!-- Ajustes -->
+    <string name="settings">Ajustes</string>
+    <string name="appearance">Apariencia</string>
+    <string name="theme">Tema</string>
+    <string name="dynamic_color">Colores del fondo de pantalla</string>
+    <string name="dynamic_color_hint">Material You: ignora el tema elegido</string>
+    <string name="library">Biblioteca</string>
+    <plurals name="library_count">
+        <item quantity="one">%1$d canciones de %2$d archivo de audio</item>
+        <item quantity="other">%1$d canciones de %2$d archivos de audio</item>
+    </plurals>
+    <string name="min_duration">Duración mínima</string>
+    <string name="min_size">Tamaño mínimo</string>
+    <string name="folders">Carpetas</string>
+    <string name="folders_all">Se incluyen todas</string>
+    <plurals name="folders_hidden">
+        <item quantity="one">%d carpeta oculta</item>
+        <item quantity="other">%d carpetas ocultas</item>
+    </plurals>
+    <string name="folders_hint">Desmarca las carpetas que no son música. Las subcarpetas se ocultan con ellas. Aquí ya no aparecen las que excluyen los patrones.</string>
+    <string name="include_kinds">Incluir también</string>
+    <string name="kind_podcasts">Podcasts</string>
+    <string name="kind_audiobooks">Audiolibros</string>
+    <string name="kind_recordings">Grabaciones de voz y llamadas</string>
+    <string name="kind_ringtones">Tonos de llamada</string>
+    <string name="kind_notifications">Sonidos de notificación</string>
+    <string name="kind_alarms">Alarmas</string>
+    <string name="patterns">Rutas excluidas</string>
+    <string name="patterns_hint">Se comparan con la ruta completa del archivo. * es cualquier texto y ? un carácter; no distingue mayúsculas.</string>
+    <string name="add">Añadir</string>
+    <string name="remove">Quitar</string>
+    <string name="reset_filters">Restablecer filtros</string>
+
+    <!-- Temas -->
+    <string name="themes">Temas</string>
+    <string name="import_theme">Importar colors.toml</string>
+    <string name="export_theme">Exportar colors.toml</string>
+    <string name="imported">Tema «%1$s» importado</string>
+    <string name="import_failed">Ese archivo no tiene colores de tema</string>
+    <string name="builtin_theme">Omarchy</string>
+    <string name="own_theme">Tuyo</string>
+    <string name="more">Más opciones</string>
+    <string name="edit">Editar</string>
+    <string name="copy_and_edit">Duplicar y editar</string>
+    <string name="delete">Borrar</string>
+    <string name="edit_theme">Editar tema</string>
+    <string name="new_theme">Nuevo tema</string>
+    <string name="copy_suffix">(copia)</string>
+    <string name="save">Guardar</string>
+    <string name="theme_name">Nombre</string>
+    <string name="mode_dark">Oscuro</string>
+    <string name="mode_light">Claro</string>
+    <string name="derived">calculado</string>
+    <string name="preview">Vista previa</string>
+    <string name="key_accent">Acento</string>
+    <string name="key_background">Fondo</string>
+    <string name="key_dark_background">Fondo oscuro</string>
+    <string name="key_lighter_background">Fondo claro</string>
+    <string name="key_foreground">Texto</string>
+    <string name="key_dark_foreground">Texto secundario</string>
+    <string name="key_selection">Selección</string>
+    <string name="key_muted">Bordes</string>
+    <string name="key_red">Error</string>
+    <string name="hue">Tono</string>
+    <string name="saturation">Saturación</string>
+    <string name="brightness">Brillo</string>
+    <string name="palette_colors">Colores de la paleta</string>
+    <string name="ok">Aceptar</string>
+    <string name="cancel">Cancelar</string>
+</resources>
