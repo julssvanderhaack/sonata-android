@@ -8,6 +8,8 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <!-- lrclib.net lyrics, only when the user turns online search on -->
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:name=".SonataApp"

@@ -35,6 +35,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -168,7 +169,7 @@ fun SongList(
 private fun LetterStrip(letters: List<String>, onPick: (Int) -> Int?, state: LazyListState, modifier: Modifier) {
     val scope = rememberCoroutineScope()
     var active by remember { mutableStateOf<Int?>(null) }
-    var height by remember { mutableStateOf(1) }
+    var height by remember { mutableIntStateOf(1) }
     fun pick(y: Float) {
         val i = (y / height * letters.size).toInt().coerceIn(0, letters.lastIndex)
         active = i

@@ -127,4 +127,33 @@
     <string name="palette_colors">Colores de la paleta</string>
     <string name="ok">Aceptar</string>
     <string name="cancel">Cancelar</string>
+
+    <!-- Letras -->
+    <string name="lyrics">Letra</string>
+    <string name="lyrics_section">Letras</string>
+    <string name="lyrics_online">Buscar letras en internet</string>
+    <string name="lyrics_online_note">En lrclib.net. Solo se envía el título, el artista, el álbum y la duración.</string>
+    <string name="lyrics_folder">Carpeta con archivos .lrc</string>
+    <string name="lyrics_folder_none">Ninguna: elige la carpeta de tu música para usar las letras que tengas junto a las canciones</string>
+    <string name="lyrics_none">No se ha encontrado la letra de esta canción.</string>
+    <string name="lyrics_none_local">Esta canción no trae la letra en el archivo.</string>
+    <string name="lyrics_search_online">Buscar en lrclib.net</string>
+    <string name="lyrics_offline">Sin conexión: no se ha podido buscar la letra.</string>
+    <string name="lyrics_instrumental">Instrumental</string>
+    <string name="lyrics_from_file">Archivo .lrc</string>
+    <string name="lyrics_from_tag">Etiqueta del archivo</string>
+    <string name="lyrics_searching_better">%1$s · buscando una versión sincronizada…</string>
+    <string name="lyrics_reload">Buscar de nuevo</string>
+    <string name="retry">Reintentar</string>
+
+    <!-- Ecualizador -->
+    <string name="equalizer">Ecualizador</string>
+    <string name="preamp">Preamplificador</string>
+    <string name="auto_preamp">Evitar saturación</string>
+    <string name="auto_preamp_hint">Baja el volumen lo que suba el pico de la curva</string>
+    <string name="eq_reset">Dejar plano</string>
+    <string name="eq_custom">Personalizado</string>
+    <string name="eq_save_preset">Guardar preajuste</string>
+    <string name="on">Activado</string>
+    <string name="off">Desactivado</string>
 </resources>

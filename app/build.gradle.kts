@@ -12,8 +12,8 @@ android {
         applicationId = "io.github.julssvanderhaack.sonata"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.2.0"
     }
 
     buildTypes {
@@ -53,6 +53,7 @@ dependencies {
     ksp(libs.room.compiler)
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.session)
+    implementation(libs.media3.inspector)
     debugImplementation(libs.compose.ui.tooling)
     testImplementation(libs.junit)
 }

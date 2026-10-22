@@ -79,6 +79,7 @@ fun AppRoot(vm: MainViewModel) {
                     Route.Folders -> FoldersScreen(vm)
                     Route.Themes -> ThemesScreen(vm)
                     is Route.ThemeEditor -> ThemeEditorScreen(vm, route.base, route.editing)
+                    Route.Equalizer -> EqScreen(vm)
                 }
             }
             if (mini) MiniPlayer(vm, Modifier.navigationBarsPadding())

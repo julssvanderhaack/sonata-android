@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import io.github.julssvanderhaack.sonata.eq.EqSettings
 import io.github.julssvanderhaack.sonata.library.LibraryFilter
 import io.github.julssvanderhaack.sonata.library.SongSort
 import kotlinx.coroutines.flow.Flow
@@ -20,6 +21,10 @@ data class AppSettings(
     val dynamicColor: Boolean = false,
     val filter: LibraryFilter = LibraryFilter(),
     val songSort: SongSort = SongSort.TITLE,
+    /** lrclib.net lookups; off until the user turns them on (only title, artist, album and length are sent). */
+    val onlineLyrics: Boolean = false,
+    /** SAF tree the user granted for reading .lrc files next to the songs. */
+    val lyricsTree: String? = null,
 ) {
     companion object {
         const val DEFAULT_THEME = "cobalt2"
@@ -41,6 +46,9 @@ class Settings(private val context: Context) {
         val podcasts = booleanPreferencesKey("include_podcasts")
         val audiobooks = booleanPreferencesKey("include_audiobooks")
         val songSort = stringPreferencesKey("song_sort")
+        val onlineLyrics = booleanPreferencesKey("online_lyrics")
+        val lyricsTree = stringPreferencesKey("lyrics_tree")
+        val eq = stringPreferencesKey("eq")
     }
 
     val flow: Flow<AppSettings> = context.store.data.map { p ->
@@ -61,8 +69,17 @@ class Settings(private val context: Context) {
                 includeAudiobooks = p[K.audiobooks] ?: d.includeAudiobooks,
             ),
             songSort = p[K.songSort]?.let { runCatching { SongSort.valueOf(it) }.getOrNull() } ?: SongSort.TITLE,
+            onlineLyrics = p[K.onlineLyrics] ?: false,
+            lyricsTree = p[K.lyricsTree],
         )
     }
+
+    /** Kept apart from [flow]: the EQ changes many times a second while dragging. */
+    val eq: Flow<EqSettings> = context.store.data.map { EqSettings.parse(it[K.eq]) }
+
+    suspend fun setEq(s: EqSettings) = set { it[K.eq] = s.serialize() }
+    suspend fun setOnlineLyrics(on: Boolean) = set { it[K.onlineLyrics] = on }
+    suspend fun setLyricsTree(uri: String?) = set { if (uri == null) it.remove(K.lyricsTree) else it[K.lyricsTree] = uri }
 
     private suspend fun set(block: (androidx.datastore.preferences.core.MutablePreferences) -> Unit) {
         context.store.edit { block(it) }

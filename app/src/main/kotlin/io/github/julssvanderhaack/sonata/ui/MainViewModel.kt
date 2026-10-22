@@ -7,6 +7,8 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.julssvanderhaack.sonata.R
 import io.github.julssvanderhaack.sonata.SonataApp
+import io.github.julssvanderhaack.sonata.eq.EqBus
+import io.github.julssvanderhaack.sonata.eq.EqSettings
 import io.github.julssvanderhaack.sonata.library.Album
 import io.github.julssvanderhaack.sonata.library.AlbumSort
 import io.github.julssvanderhaack.sonata.library.Artist
@@ -23,6 +25,7 @@ import io.github.julssvanderhaack.sonata.library.groupArtists
 import io.github.julssvanderhaack.sonata.library.groupGenres
 import io.github.julssvanderhaack.sonata.library.matchesQuery
 import io.github.julssvanderhaack.sonata.library.songComparator
+import io.github.julssvanderhaack.sonata.lyrics.LyricsState
 import io.github.julssvanderhaack.sonata.settings.AppSettings
 import io.github.julssvanderhaack.sonata.theme.Palette
 import io.github.julssvanderhaack.sonata.theme.ResolvedPalette
@@ -31,7 +34,12 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -47,6 +55,7 @@ sealed interface Route {
     data object Themes : Route
     /** [base] is the theme to start from; [editing] = overwrite it instead of saving a copy. */
     data class ThemeEditor(val base: String, val editing: Boolean) : Route
+    data object Equalizer : Route
 }
 
 data class LibraryView(
@@ -61,6 +70,8 @@ data class LibraryView(
     val folders: List<FolderNode> = emptyList(),
     /** Tree for the Carpetas filter screen: everything except the folder exclusions themselves. */
     val folderChoices: List<FolderNode> = emptyList(),
+    /** Every track MediaStore knows, filtered or not: the queue may outlive a filter change. */
+    val byId: Map<Long, Track> = emptyMap(),
 )
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
@@ -107,11 +118,52 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 showGenres = genresWorthShowing(songs),
                 folders = folderTree(shown, ::volumeLabel),
                 folderChoices = folderTree(all.filter(keepIgnoringFolders), ::volumeLabel),
+                byId = all.associateBy { it.id },
             )
         }.flowOn(Dispatchers.Default)
             .stateIn(viewModelScope, SharingStarted.Eagerly, LibraryView())
 
     val nowPlaying = player.state
+
+    // --- lyrics ---------------------------------------------------------------
+
+    /** Lyrics pane shown instead of the cover on the Sonando screen. */
+    val showLyrics = MutableStateFlow(false)
+    /** Seconds added to the song position, ±0.5 s per tap; resets with each song like on desktop. */
+    val lyricsOffset = MutableStateFlow(0.0)
+    private val lyricsReload = MutableStateFlow(0L to 0) // (trackId, counter): skip the cache once
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    val lyrics: StateFlow<LyricsState> =
+        combine(
+            nowPlaying.map { it.trackId }.distinctUntilChanged(),
+            library.map { it.byId }.distinctUntilChanged(),
+            settings.map { it.onlineLyrics to it.lyricsTree }.distinctUntilChanged(),
+            lyricsReload,
+        ) { id, byId, (online, tree), reload -> Triple(id?.let { byId[it] }, online to tree, reload) }
+            .distinctUntilChanged()
+            .flatMapLatest { (track, opts, reload) ->
+                if (track == null) flowOf(LyricsState.Idle)
+                else sonata.lyrics.load(track, opts.first, opts.second, skipCache = reload.first == track.id && reload.second > 0)
+            }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), LyricsState.Idle)
+
+    init {
+        viewModelScope.launch { nowPlaying.map { it.trackId }.distinctUntilChanged().collect { lyricsOffset.value = 0.0 } }
+    }
+
+    fun reloadLyrics() {
+        val id = nowPlaying.value.trackId ?: return
+        lyricsReload.value = id to lyricsReload.value.second + 1
+    }
+
+    fun setOnlineLyrics(on: Boolean) = viewModelScope.launch { sonata.settings.setOnlineLyrics(on) }
+    fun setLyricsTree(uri: String?) = viewModelScope.launch { sonata.settings.setLyricsTree(uri) }
+
+    // --- equaliser ------------------------------------------------------------
+
+    val eq = EqBus.settings
+    fun updateEq(block: (EqSettings) -> EqSettings) { EqBus.settings.value = block(EqBus.settings.value) }
 
     fun startLibrary() = sonata.startLibrary()
     fun rescan() = sonata.rescan()

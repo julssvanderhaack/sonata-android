@@ -56,6 +56,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -344,9 +345,9 @@ private fun Preview() {
 @Composable
 fun ColorPickerDialog(initial: Rgb, swatches: List<Rgb>, onDismiss: () -> Unit, onPick: (Rgb) -> Unit) {
     val hsv0 = remember(initial) { FloatArray(3).also { android.graphics.Color.colorToHSV(0xff000000.toInt() or initial.value, it) } }
-    var h by remember { mutableStateOf(hsv0[0]) }
-    var s by remember { mutableStateOf(hsv0[1]) }
-    var v by remember { mutableStateOf(hsv0[2]) }
+    var h by remember { mutableFloatStateOf(hsv0[0]) }
+    var s by remember { mutableFloatStateOf(hsv0[1]) }
+    var v by remember { mutableFloatStateOf(hsv0[2]) }
     val current = hsv(h, s, v)
     var hex by remember { mutableStateOf(initial.hex()) }
     fun set(c: Rgb) {

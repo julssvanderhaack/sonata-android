@@ -1,6 +1,12 @@
 package io.github.julssvanderhaack.sonata.ui
 
+import android.content.Intent
+import android.net.Uri
+import androidx.core.net.toUri
 import android.os.Build
+import android.provider.DocumentsContract
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -41,6 +47,7 @@ import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -117,6 +124,7 @@ fun SettingsScreen(vm: MainViewModel) {
     val s by vm.settings.collectAsStateWithLifecycle()
     val lib by vm.library.collectAsStateWithLifecycle()
     val f = s.filter
+    val eqOn = vm.eq.collectAsStateWithLifecycle().value.enabled
     BackScaffold(stringResource(R.string.settings), vm::back) { pad ->
         LazyColumn(Modifier.padding(pad).fillMaxSize()) {
             item {
@@ -125,6 +133,11 @@ fun SettingsScreen(vm: MainViewModel) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     SwitchRow(stringResource(R.string.dynamic_color), stringResource(R.string.dynamic_color_hint), s.dynamicColor, vm::setDynamicColor)
                 }
+
+                SectionTitle(stringResource(R.string.lyrics_section))
+                SwitchRow(stringResource(R.string.lyrics_online), stringResource(R.string.lyrics_online_note), s.onlineLyrics, vm::setOnlineLyrics)
+                LyricsFolderRow(s.lyricsTree, vm)
+                LinkRow(stringResource(R.string.equalizer), stringResource(if (eqOn) R.string.on else R.string.off)) { vm.open(Route.Equalizer) }
 
                 SectionTitle(stringResource(R.string.library))
                 Text(
@@ -167,6 +180,36 @@ fun SettingsScreen(vm: MainViewModel) {
                 }
             }
         }
+    }
+}
+
+/** Folder (usually Music) whose .lrc files Sonata may read; the audio permission alone doesn't cover them. */
+@Composable
+private fun LyricsFolderRow(tree: String?, vm: MainViewModel) {
+    val context = LocalContext.current
+    val pick = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) {
+            context.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            vm.setLyricsTree(uri.toString())
+        }
+    }
+    val label = tree?.let { runCatching { DocumentsContract.getTreeDocumentId(it.toUri()) }.getOrNull() }
+        ?.replace("primary:", stringResource(R.string.volume_internal) + "/")
+    Row(
+        Modifier.fillMaxWidth().clickable { pick.launch(null) }.padding(start = 16.dp, end = 4.dp, top = 12.dp, bottom = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            Text(stringResource(R.string.lyrics_folder), style = MaterialTheme.typography.bodyLarge)
+            Text(
+                label ?: stringResource(R.string.lyrics_folder_none), style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        if (tree != null) IconButton(onClick = {
+            runCatching { context.contentResolver.releasePersistableUriPermission(tree.toUri(), Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+            vm.setLyricsTree(null)
+        }) { Icon(Icons.Rounded.Close, stringResource(R.string.remove)) }
     }
 }
 

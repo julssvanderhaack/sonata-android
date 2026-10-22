@@ -13,6 +13,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Equalizer
+import androidx.compose.material.icons.rounded.Lyrics
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Repeat
@@ -109,52 +111,85 @@ private fun PlayPause(now: NowPlaying, vm: MainViewModel, big: Boolean) {
 @Composable
 fun NowPlayingScreen(vm: MainViewModel) {
     val now by vm.nowPlaying.collectAsStateWithLifecycle()
+    val lyrics by vm.showLyrics.collectAsStateWithLifecycle()
+    val eq by vm.eq.collectAsStateWithLifecycle()
     PositionClock(vm, now.playing, 250)
-    BackScaffold(stringResource(R.string.now_playing), vm::back) { pad ->
+    BackScaffold(
+        stringResource(R.string.now_playing), vm::back,
+        actions = {
+            val on = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+            IconButton(onClick = { vm.showLyrics.value = !lyrics }, colors = if (lyrics) on else IconButtonDefaults.iconButtonColors()) {
+                Icon(Icons.Rounded.Lyrics, stringResource(R.string.lyrics))
+            }
+            IconButton(onClick = { vm.open(Route.Equalizer) }, colors = if (eq.enabled) on else IconButtonDefaults.iconButtonColors()) {
+                Icon(Icons.Rounded.Equalizer, stringResource(R.string.equalizer))
+            }
+        },
+    ) { pad ->
         BoxWithConstraints(Modifier.padding(pad).fillMaxSize().padding(horizontal = 24.dp)) {
             val art = min(maxWidth, maxHeight * 0.5f)
             Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Spacer(Modifier.weight(1f))
-                Art(now.trackId, art, corner = 14.dp)
-                Spacer(Modifier.height(24.dp))
-                Text(
-                    now.title, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center,
-                    maxLines = 2, overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    listOfNotNull(now.artist ?: unknownArtist(), now.album).joinToString(" · "),
-                    style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary,
-                    textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-                Spacer(Modifier.height(16.dp))
-                SeekBar(now, vm)
-                Row(
-                    Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    val on = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.primary)
-                    val off = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
-                    IconButton(onClick = vm.player::toggleShuffle, colors = if (now.shuffle) on else off) {
-                        Icon(Icons.Rounded.Shuffle, stringResource(R.string.shuffle))
+                if (lyrics) {
+                    // small header so the lyrics get the room
+                    Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Art(now.trackId, 56.dp)
+                        Column(Modifier.weight(1f).padding(start = 12.dp)) {
+                            Text(now.title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(
+                                now.artist ?: unknownArtist(), style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     }
-                    IconButton(onClick = vm.player::previous) {
-                        Icon(Icons.Rounded.SkipPrevious, stringResource(R.string.previous), Modifier.size(36.dp))
-                    }
-                    PlayPause(now, vm, big = true)
-                    IconButton(onClick = vm.player::next, enabled = now.hasNext) {
-                        Icon(Icons.Rounded.SkipNext, stringResource(R.string.next), Modifier.size(36.dp))
-                    }
-                    IconButton(onClick = vm.player::cycleRepeat, colors = if (now.repeat != Player.REPEAT_MODE_OFF) on else off) {
-                        Icon(
-                            if (now.repeat == Player.REPEAT_MODE_ONE) Icons.Rounded.RepeatOne else Icons.Rounded.Repeat,
-                            stringResource(R.string.repeat),
-                        )
-                    }
+                    LyricsPane(vm, Modifier.weight(1f).fillMaxWidth())
+                } else {
+                    Spacer(Modifier.weight(1f))
+                    Art(now.trackId, art, corner = 14.dp)
+                    Spacer(Modifier.height(24.dp))
+                    Text(
+                        now.title, style = MaterialTheme.typography.headlineSmall, textAlign = TextAlign.Center,
+                        maxLines = 2, overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        listOfNotNull(now.artist ?: unknownArtist(), now.album).joinToString(" · "),
+                        style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary,
+                        textAlign = TextAlign.Center, maxLines = 2, overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                    Spacer(Modifier.height(16.dp))
                 }
-                Spacer(Modifier.weight(1f))
+                SeekBar(now, vm)
+                Controls(now, vm)
+                if (!lyrics) Spacer(Modifier.weight(1f))
             }
+        }
+    }
+}
+
+@Composable
+private fun Controls(now: NowPlaying, vm: MainViewModel) {
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        val on = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+        val off = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
+        IconButton(onClick = vm.player::toggleShuffle, colors = if (now.shuffle) on else off) {
+            Icon(Icons.Rounded.Shuffle, stringResource(R.string.shuffle))
+        }
+        IconButton(onClick = vm.player::previous) {
+            Icon(Icons.Rounded.SkipPrevious, stringResource(R.string.previous), Modifier.size(36.dp))
+        }
+        PlayPause(now, vm, big = true)
+        IconButton(onClick = vm.player::next, enabled = now.hasNext) {
+            Icon(Icons.Rounded.SkipNext, stringResource(R.string.next), Modifier.size(36.dp))
+        }
+        IconButton(onClick = vm.player::cycleRepeat, colors = if (now.repeat != Player.REPEAT_MODE_OFF) on else off) {
+            Icon(
+                if (now.repeat == Player.REPEAT_MODE_ONE) Icons.Rounded.RepeatOne else Icons.Rounded.Repeat,
+                stringResource(R.string.repeat),
+            )
         }
     }
 }
