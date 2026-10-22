@@ -29,6 +29,7 @@ object SpectrumBus {
     @Volatile private var positionUs = C.TIME_UNSET
     @Volatile private var positionAtNs = 0L
     @Volatile private var playing = false
+    private var shownUs = C.TIME_UNSET          // last position drawn, so the view never steps back
 
     internal fun write(pts: Long, sampleRate: Int, mono: FloatArray, frames: Int) = synchronized(lock) {
         if (sampleRate != rate) clearLocked()
@@ -56,6 +57,7 @@ object SpectrumBus {
         head = 0
         anchors = 0
         positionUs = C.TIME_UNSET
+        shownUs = C.TIME_UNSET
     }
 
     /**
@@ -66,8 +68,12 @@ object SpectrumBus {
         val n = out.size
         var pos = positionUs
         if (pos == C.TIME_UNSET || anchors == 0L || head < n) return 0
-        // the renderer polls the position every ~10 ms; fill the gap with the wall clock
-        if (playing) pos += ((System.nanoTime() - positionAtNs) / 1000).coerceIn(0, 50_000)
+        // ExoPlayer's dynamic scheduling only asks for the position when the
+        // AudioTrack wants data, which can be 0.5 s apart: run on the wall clock in between
+        if (playing) pos += ((System.nanoTime() - positionAtNs) / 1000).coerceIn(0, 1_000_000)
+        // a fresh, slightly earlier report mustn't make the bars stutter backwards
+        if (shownUs != C.TIME_UNSET && pos < shownUs && shownUs - pos < 150_000) pos = shownUs
+        shownUs = pos
         // latest buffer that started at or before the speaker's position
         val oldest = maxOf(0L, anchors - ANCHORS)
         var i = anchors - 1

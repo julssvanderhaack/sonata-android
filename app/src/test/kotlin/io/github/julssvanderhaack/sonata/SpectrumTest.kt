@@ -20,7 +20,10 @@ class SpectrumTest {
     private val bands = 48
 
     @After
-    fun reset() = SpectrumBus.clear()
+    fun reset() {
+        SpectrumBus.playing(false)
+        SpectrumBus.clear()
+    }
 
     private fun bandOf(hz: Double) = (ln(hz / SPECTRUM_LO_HZ) / ln(spectrumHiHz(rate) / SPECTRUM_LO_HZ) * bands).toInt()
 
@@ -86,5 +89,26 @@ class SpectrumTest {
         SpectrumBus.position(750_000)
         SpectrumBus.snapshot(out)
         assertEquals(rate * 3 / 4 - 1f, out.last(), 1f)
+    }
+
+    @Test
+    fun keepsMovingBetweenSparsePositionReports() {
+        // ExoPlayer may report the position only every few hundred ms
+        val frames = rate * 2
+        val buf = FloatArray(frames) { it.toFloat() }
+        SpectrumBus.write(0, rate, buf, frames)
+        SpectrumBus.playing(true)
+        SpectrumBus.position(100_000)
+        val out = FloatArray(4096)
+        SpectrumBus.snapshot(out)
+        val first = out.last()
+        Thread.sleep(300)
+        SpectrumBus.snapshot(out)
+        val moved = (out.last() - first) / rate
+        assertTrue("moved $moved s", moved in 0.28f..0.4f)
+        // a report a little behind what was drawn doesn't pull the bars back
+        SpectrumBus.position(300_000)
+        SpectrumBus.snapshot(out)
+        assertTrue(out.last() >= first + 0.28f * rate)
     }
 }
