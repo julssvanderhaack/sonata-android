@@ -63,10 +63,10 @@ class SpectrumTest {
         val a = Analyzer()
         sine(a, 440.0, 0.5)
         a.analyse(rate, bands, null)
-        a.step(0.016f)
+        a.step(0.033f)
         assertTrue(a.level.max() > 0.5f)
         a.silence(bands)
-        repeat(200) { a.step(0.016f) }
+        repeat(200) { a.step(0.033f) }
         assertTrue(a.settled)
     }
 

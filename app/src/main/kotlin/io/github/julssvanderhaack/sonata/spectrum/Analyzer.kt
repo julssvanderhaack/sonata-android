@@ -141,11 +141,13 @@ class Analyzer(val n: Int = 4096) {
             peak = FloatArray(bands)
             hold = FloatArray(bands)
         }
+        // the desktop closes 70 % of the gap per 33 ms frame; keep that whatever the frame rate
+        val rise = 1 - 0.3f.pow(dt / 0.033f)
         var moving = false
         for (b in 0 until bands) {
             val t = target[b]
             var l = level[b]
-            l = if (t > l) l + (t - l) * 0.7f else max(t, l - dt * 1.6f) // quick up, gentle fall
+            l = if (t > l) l + (t - l) * rise else max(t, l - dt * 1.6f) // quick up, gentle fall
             var p = peak[b]
             if (l >= p) {
                 p = l

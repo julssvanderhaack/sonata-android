@@ -14,8 +14,8 @@ android {
         applicationId = "io.github.julssvanderhaack.sonata"
         minSdk = 26
         targetSdk = 37
-        versionCode = 4
-        versionName = "0.3.1"
+        versionCode = 5
+        versionName = "0.3.2"
     }
 
     // The release key lives outside the repo (~/.android/sonata-release.properties):

@@ -38,7 +38,7 @@ private val GRID_HZ = doubleArrayOf(50.0, 100.0, 200.0, 500.0, 1000.0, 2000.0, 5
 
 /**
  * Live spectrum of what is playing, like the desktop one: log-spaced bars with
- * falling peak caps. Analyses once per display frame (capped near 60 fps) and
+ * falling peak caps. Analyses ~30 times a second, the desktop's rate, and
  * only while on screen; with the music paused it stops once the bars have fallen.
  */
 @Composable
@@ -61,8 +61,8 @@ fun SpectrumPane(playing: Boolean, modifier: Modifier = Modifier) {
                 last = 0L
             }
             val now = withFrameNanos { it }
-            val dt = if (last == 0L) 0.016f else ((now - last) / 1e9f).coerceAtMost(0.1f)
-            if (last != 0L && dt < 0.014f) continue // 90/120 Hz screens: no need to go past ~60
+            val dt = if (last == 0L) 0.033f else ((now - last) / 1e9f).coerceAtMost(0.1f)
+            if (last != 0L && dt < 0.028f) continue // ~30 fps like the desktop; faster looks jittery
             last = now
             if (bands == 0) continue
             val rate = if (isPlaying) SpectrumBus.snapshot(analyzer.samples) else 0
