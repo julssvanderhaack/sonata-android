@@ -127,8 +127,8 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     // --- lyrics ---------------------------------------------------------------
 
-    /** Lyrics pane shown instead of the cover on the Sonando screen. */
-    val showLyrics = MutableStateFlow(false)
+    /** What the Sonando screen shows: the cover, the lyrics or the spectrum. */
+    val pane = MutableStateFlow(NowPane.Cover)
     /** Seconds added to the song position, ±0.5 s per tap; resets with each song like on desktop. */
     val lyricsOffset = MutableStateFlow(0.0)
     private val lyricsReload = MutableStateFlow(0L to 0) // (trackId, counter): skip the cache once
@@ -203,3 +203,5 @@ fun LibraryView.findFolder(key: String): FolderNode? {
     }
     return walk(folders)
 }
+
+enum class NowPane { Cover, Lyrics, Spectrum }

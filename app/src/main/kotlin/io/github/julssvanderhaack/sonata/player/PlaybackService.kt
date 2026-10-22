@@ -12,6 +12,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.DefaultAudioSink
 import io.github.julssvanderhaack.sonata.eq.EqProcessor
+import io.github.julssvanderhaack.sonata.spectrum.SpectrumSink
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import io.github.julssvanderhaack.sonata.MainActivity
@@ -26,14 +27,16 @@ class PlaybackService : MediaSessionService() {
 
     override fun onCreate() {
         super.onCreate()
-        // the equaliser runs as an audio processor inside ExoPlayer's sink
+        // the equaliser runs as an audio processor inside ExoPlayer's sink; the spectrum listens at its door
         val renderers = object : DefaultRenderersFactory(this) {
             override fun buildAudioSink(context: Context, enableFloatOutput: Boolean, enableAudioTrackPlaybackParams: Boolean): AudioSink =
-                DefaultAudioSink.Builder(context)
-                    .setEnableFloatOutput(enableFloatOutput)
-                    .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
-                    .setAudioProcessors(arrayOf(EqProcessor()))
-                    .build()
+                SpectrumSink(
+                    DefaultAudioSink.Builder(context)
+                        .setEnableFloatOutput(enableFloatOutput)
+                        .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
+                        .setAudioProcessors(arrayOf(EqProcessor()))
+                        .build(),
+                )
         }
         val player = ExoPlayer.Builder(this, renderers)
             .setAudioAttributes(

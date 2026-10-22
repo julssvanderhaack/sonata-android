@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Equalizer
+import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.Lyrics
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -111,15 +112,20 @@ private fun PlayPause(now: NowPlaying, vm: MainViewModel, big: Boolean) {
 @Composable
 fun NowPlayingScreen(vm: MainViewModel) {
     val now by vm.nowPlaying.collectAsStateWithLifecycle()
-    val lyrics by vm.showLyrics.collectAsStateWithLifecycle()
+    val pane by vm.pane.collectAsStateWithLifecycle()
+    val lyrics = pane == NowPane.Lyrics
     val eq by vm.eq.collectAsStateWithLifecycle()
     PositionClock(vm, now.playing, 250)
     BackScaffold(
         stringResource(R.string.now_playing), vm::back,
         actions = {
             val on = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.primary)
-            IconButton(onClick = { vm.showLyrics.value = !lyrics }, colors = if (lyrics) on else IconButtonDefaults.iconButtonColors()) {
+            IconButton(onClick = { vm.pane.value = if (lyrics) NowPane.Cover else NowPane.Lyrics }, colors = if (lyrics) on else IconButtonDefaults.iconButtonColors()) {
                 Icon(Icons.Rounded.Lyrics, stringResource(R.string.lyrics))
+            }
+            val spectrum = pane == NowPane.Spectrum
+            IconButton(onClick = { vm.pane.value = if (spectrum) NowPane.Cover else NowPane.Spectrum }, colors = if (spectrum) on else IconButtonDefaults.iconButtonColors()) {
+                Icon(Icons.Rounded.GraphicEq, stringResource(R.string.spectrum))
             }
             IconButton(onClick = { vm.open(Route.Equalizer) }, colors = if (eq.enabled) on else IconButtonDefaults.iconButtonColors()) {
                 Icon(Icons.Rounded.Equalizer, stringResource(R.string.equalizer))
@@ -129,8 +135,8 @@ fun NowPlayingScreen(vm: MainViewModel) {
         BoxWithConstraints(Modifier.padding(pad).fillMaxSize().padding(horizontal = 24.dp)) {
             val art = min(maxWidth, maxHeight * 0.5f)
             Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-                if (lyrics) {
-                    // small header so the lyrics get the room
+                if (pane != NowPane.Cover) {
+                    // small header so the lyrics or the spectrum get the room
                     Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
                         Art(now.trackId, 56.dp)
                         Column(Modifier.weight(1f).padding(start = 12.dp)) {
@@ -141,7 +147,8 @@ fun NowPlayingScreen(vm: MainViewModel) {
                             )
                         }
                     }
-                    LyricsPane(vm, Modifier.weight(1f).fillMaxWidth())
+                    if (lyrics) LyricsPane(vm, Modifier.weight(1f).fillMaxWidth())
+                    else SpectrumPane(now.playing, Modifier.weight(1f).fillMaxWidth().padding(vertical = 16.dp))
                 } else {
                     Spacer(Modifier.weight(1f))
                     Art(now.trackId, art, corner = 14.dp)
@@ -160,7 +167,7 @@ fun NowPlayingScreen(vm: MainViewModel) {
                 }
                 SeekBar(now, vm)
                 Controls(now, vm)
-                if (!lyrics) Spacer(Modifier.weight(1f))
+                if (pane == NowPane.Cover) Spacer(Modifier.weight(1f))
             }
         }
     }

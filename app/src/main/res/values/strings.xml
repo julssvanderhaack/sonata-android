@@ -130,6 +130,8 @@
 
     <!-- Letras -->
     <string name="lyrics">Letra</string>
+    <string name="spectrum">Espectro</string>
+    <string name="spectrum_idle">El espectro aparecerá al reproducir</string>
     <string name="lyrics_section">Letras</string>
     <string name="lyrics_online">Buscar letras en internet</string>
     <string name="lyrics_online_note">En lrclib.net. Solo se envía el título, el artista, el álbum y la duración.</string>
