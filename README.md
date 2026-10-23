@@ -5,12 +5,15 @@ Reproductor de música local para Android, hermano del
 [Omarchy](https://omarchy.org) como paletas de colores, que se pueden editar,
 importar y exportar en el mismo formato `colors.toml` del escritorio.
 
-> Estado: **0.2**. Hay biblioteca, filtros, temas, reproducción en segundo plano,
-> letras sincronizadas y ecualizador. Faltan espectro y listas (ver *Pendiente*).
+> Estado: **0.3**. Hay biblioteca, filtros, temas, reproducción en segundo plano,
+> letras sincronizadas, ecualizador y espectro en vivo. Faltan las listas (ver *Pendiente*).
 
-| Canciones | Sonando | Letra sincronizada | Ecualizador |
-|---|---|---|---|
-| ![Lista de canciones con carátulas y barra de letras](docs/capturas/02-canciones.png) | ![Pantalla de reproducción](docs/capturas/07-sonando.png) | ![Letra de lrclib.net siguiendo la canción](docs/capturas/19-letra-lrclib.png) | ![Ecualizador de 10 bandas con la curva](docs/capturas/20-ecualizador.png) |
+**Descargar:** el APK está en [Releases](https://github.com/julssvanderhaack/sonata-android/releases/latest).
+Ábrelo en el móvil y acepta instalar desde fuera de la tienda. Necesita Android 8.0 o superior.
+
+| Canciones | Sonando | Letra sincronizada | Ecualizador | Espectro |
+|---|---|---|---|---|
+| ![Lista de canciones con carátulas y barra de letras](docs/capturas/02-canciones.png) | ![Pantalla de reproducción](docs/capturas/07-sonando.png) | ![Letra de lrclib.net siguiendo la canción](docs/capturas/19-letra-lrclib.png) | ![Ecualizador de 10 bandas con la curva](docs/capturas/20-ecualizador.png) | ![Espectro en vivo de ruido rosa con tonos de 110 Hz y 2,5 kHz](docs/capturas/espectro.png) |
 
 | Temas | Editor de temas |
 |---|---|
@@ -73,6 +76,12 @@ importar y exportar en el mismo formato `colors.toml` del escritorio.
   Funciona como un procesador dentro de ExoPlayer, así que no depende del ecualizador
   de cada fabricante. Apagado o plano, deja el audio intacto bit a bit (hay un test
   que lo comprueba).
+- **Espectro en vivo**, como el del escritorio (port de `spectrum.cpp`): FFT de 4096
+  puntos, bandas logarítmicas de 30 Hz a 18 kHz, picos que se sostienen y caen, unos
+  30 fotogramas por segundo sea cual sea el refresco de la pantalla. Va sincronizado
+  con lo que se oye, no con lo que se decodifica (Android decodifica ~0,5 s antes) y
+  dibuja también el efecto del ecualizador. Solo trabaja mientras está en pantalla y
+  sonando.
 - **Temas**: los 27 de Omarchy que hay en `assets/themes`, más los tuyos.
   - *Duplicar y editar* abre un editor que se dibuja con el tema que estás editando,
     así que hace de vista previa.
@@ -112,7 +121,7 @@ Requisitos: Android SDK con la plataforma 37 (`~/Android/Sdk`, o `sdk.dir` en
 ```sh
 export JAVA_HOME=/opt/android-studio/jbr
 ./gradlew assembleDebug           # app/build/outputs/apk/debug/app-debug.apk
-./gradlew testDebugUnitTest       # paletas, filtros, agrupación, letras y ecualizador
+./gradlew testDebugUnitTest       # paletas, filtros, agrupación, letras, ecualizador y espectro
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
@@ -128,6 +137,7 @@ app/src/main/kotlin/io/github/julssvanderhaack/sonata/
   theme/     Palette (colors.toml → colores), ThemeRepository, SonataTheme (→ Material 3)
   lyrics/    parseLyrics (LRC), LyricsRepository (.lrc, etiquetas, caché, lrclib.net)
   eq/        filtros y preajustes (port de eq.cpp), EqProcessor dentro de ExoPlayer
+  spectrum/  SpectrumSink (captura sincronizada con el altavoz), Analyzer (port de spectrum.cpp)
   library/   Track + Room, Scanner (MediaStore), LibraryFilter, Grouping (álbumes, artistas…)
   player/    PlaybackService (MediaSessionService), PlayerConnection (MediaController)
   settings/  Settings (DataStore)
@@ -136,7 +146,6 @@ app/src/main/kotlin/io/github/julssvanderhaack/sonata/
 
 ## Pendiente
 
-- Espectro en tiempo real.
 - FFmpeg para formatos que Android no decodifica (WMA, APE…), con etiquetas leídas por
   la propia app en lugar de MediaStore.
 - Listas de reproducción, cola editable y `MediaLibraryService` para Android Auto y
