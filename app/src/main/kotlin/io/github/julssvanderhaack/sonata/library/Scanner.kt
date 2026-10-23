@@ -18,16 +18,17 @@ import kotlinx.coroutines.withContext
  */
 class Scanner(private val context: Context, private val dao: TrackDao) {
 
-    data class Result(val total: Int, val changed: Int, val removed: Int)
+    data class Result(val total: Int, val added: Int, val updated: Int, val removed: Int)
+
+    /** What to write so the library matches [found]. */
+    data class Diff(val upsert: List<Track>, val delete: List<Long>, val added: Int)
 
     suspend fun scan(): Result = withContext(Dispatchers.IO) {
         val found = query()
-        val known = dao.stamps().associate { it.id to it.dateModified }
-        val changed = found.filter { known[it.id] != it.dateModified }
-        val gone = known.keys - found.mapTo(HashSet()) { it.id }
-        if (changed.isNotEmpty()) changed.chunked(500).forEach { dao.upsert(it) }
-        if (gone.isNotEmpty()) gone.chunked(500).forEach { dao.delete(it) }
-        Result(found.size, changed.size, gone.size)
+        val d = diff(found, dao.snapshot())
+        if (d.upsert.isNotEmpty()) d.upsert.chunked(500).forEach { dao.upsert(it) }
+        if (d.delete.isNotEmpty()) d.delete.chunked(500).forEach { dao.delete(it) }
+        Result(found.size, d.added, d.upsert.size - d.added, d.delete.size)
     }
 
     private fun query(): List<Track> {
@@ -122,6 +123,20 @@ class Scanner(private val context: Context, private val dao: TrackDao) {
     }
 
     companion object {
+        /**
+         * Compares whole rows, not just the modification date: renaming a file
+         * or moving its folder keeps MediaStore's id and date but changes the
+         * name and path, and MediaStore may re-read tags without touching the
+         * date either.
+         */
+        fun diff(found: List<Track>, known: List<Track>): Diff {
+            val byId = known.associateBy { it.id }
+            val upsert = found.filter { byId[it.id] != it }
+            val added = upsert.count { it.id !in byId }
+            val seen = found.mapTo(HashSet()) { it.id }
+            return Diff(upsert, known.map { it.id }.filter { it !in seen }, added)
+        }
+
         fun uriOf(id: Long): Uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id)
     }
 }

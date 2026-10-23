@@ -25,6 +25,7 @@ import io.github.julssvanderhaack.sonata.library.groupArtists
 import io.github.julssvanderhaack.sonata.library.groupGenres
 import io.github.julssvanderhaack.sonata.library.matchesQuery
 import io.github.julssvanderhaack.sonata.library.songComparator
+import io.github.julssvanderhaack.sonata.library.Scanner
 import io.github.julssvanderhaack.sonata.lyrics.LyricsState
 import io.github.julssvanderhaack.sonata.settings.AppSettings
 import io.github.julssvanderhaack.sonata.theme.Palette
@@ -167,6 +168,11 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun startLibrary() = sonata.startLibrary()
     fun rescan() = sonata.rescan()
+
+    /** Result of the last scan asked for with the button, shown under it. */
+    val lastScan = MutableStateFlow<Scanner.Result?>(null)
+
+    fun rescanAndReport() = viewModelScope.launch { lastScan.value = sonata.scanNow() }
 
     fun setSongSort(s: SongSort) = viewModelScope.launch { sonata.settings.setSongSort(s) }
     fun setTheme(name: String) = viewModelScope.launch { sonata.settings.setTheme(name) }

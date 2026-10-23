@@ -24,6 +24,8 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /** Process-wide singletons. Small enough not to need a DI framework. */
 class SonataApp : Application() {
@@ -81,15 +83,21 @@ class SonataApp : Application() {
         }.also { contentResolver.registerContentObserver(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, true, it) }
     }
 
+    private val scanLock = Mutex()
+
+    /** Background scan (MediaStore changed); skipped if one is already running. */
     fun rescan() {
-        if (_scanning.value) return
+        if (scanLock.isLocked) return
+        scope.launch { scanNow() }
+    }
+
+    /** Scans and reports what changed. Waits for a scan already running, then does a fresh one. */
+    suspend fun scanNow(): Scanner.Result = scanLock.withLock {
         _scanning.value = true
-        scope.launch {
-            try {
-                scanner.scan()
-            } finally {
-                _scanning.value = false
-            }
+        try {
+            scanner.scan()
+        } finally {
+            _scanning.value = false
         }
     }
 }

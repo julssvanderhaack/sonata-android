@@ -1,6 +1,7 @@
 package io.github.julssvanderhaack.sonata
 
 import io.github.julssvanderhaack.sonata.library.LibraryFilter
+import io.github.julssvanderhaack.sonata.library.Scanner
 import io.github.julssvanderhaack.sonata.library.SongSort
 import io.github.julssvanderhaack.sonata.library.Track
 import io.github.julssvanderhaack.sonata.library.folderTree
@@ -182,5 +183,32 @@ class AlbumMergeTest {
             track("Music/Pink Floyd/The Wall/CD2/1.mp3", artist = "Pink Floyd", album = "The Wall", albumArtist = "Pink Floyd"),
         )
         assertEquals(1, groupAlbums(ts).size)
+    }
+}
+
+class ScanDiffTest {
+    @Test
+    fun renamedMovedAndRetaggedSongsAreUpdatedEvenWithTheSameDate() {
+        val a = track("Music/Ñandú/Zapateado.mp3")
+        val b = track("Music/Recopilatorio/02 Dos.mp3")
+        val c = track("Music/Recopilatorio/03 Tres.mp3", artist = "Viejo")
+        val d = track("Music/Borrada.mp3")
+        val known = listOf(a, b, c, d)
+        // MediaStore keeps id and date_modified on a rename or a folder move
+        val moved = a.copy(relativePath = "Music/Carpeta movida/")
+        val renamed = b.copy(fileName = "02 Dos RENOMBRADA.mp3")
+        val retagged = c.copy(artist = "Nuevo")
+        val added = track("Music/Nueva.mp3")
+        val d2 = Scanner.diff(listOf(moved, renamed, retagged, added), known)
+        assertEquals(setOf(moved, renamed, retagged, added), d2.upsert.toSet())
+        assertEquals(1, d2.added)
+        assertEquals(listOf(d.id), d2.delete)
+    }
+
+    @Test
+    fun unchangedLibraryWritesNothing() {
+        val known = listOf(track("Music/a.mp3"), track("Music/b.mp3"))
+        val d = Scanner.diff(known.map { it.copy() }, known)
+        assertTrue(d.upsert.isEmpty() && d.delete.isEmpty())
     }
 }

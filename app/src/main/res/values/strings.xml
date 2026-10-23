@@ -28,6 +28,9 @@
     <string name="empty_none">El teléfono no tiene archivos de audio en el almacenamiento compartido.</string>
     <string name="library_filters">Filtros</string>
     <string name="rescan">Volver a buscar</string>
+    <string name="rescan_running">Buscando…</string>
+    <string name="rescan_nothing">Todo estaba al día</string>
+    <string name="rescan_result">Nuevas: %1$d · Cambiadas: %2$d · Quitadas: %3$d</string>
     <string name="not_found">Ya no está en la biblioteca.</string>
 
     <plurals name="songs">

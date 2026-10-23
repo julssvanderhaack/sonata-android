@@ -145,6 +145,7 @@ fun SettingsScreen(vm: MainViewModel) {
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
+                RescanRow(vm)
                 StepSlider(stringResource(R.string.min_duration), f.minDurationSec, DURATION_STEPS, { if (it == 0) "—" else "$it s" }) { v ->
                     vm.updateFilter { it.copy(minDurationSec = v) }
                 }
@@ -175,7 +176,6 @@ fun SettingsScreen(vm: MainViewModel) {
             item {
                 HorizontalDivider(Modifier.padding(top = 16.dp))
                 Row(Modifier.padding(16.dp)) {
-                    OutlinedButton(onClick = vm::rescan, modifier = Modifier.padding(end = 8.dp)) { Text(stringResource(R.string.rescan)) }
                     TextButton(onClick = { vm.resetFilter() }) { Text(stringResource(R.string.reset_filters)) }
                 }
             }
@@ -306,3 +306,22 @@ private fun listSaver() = androidx.compose.runtime.saveable.listSaver<SnapshotSt
     save = { it.toList() },
     restore = { it.toMutableStateList() },
 )
+
+/** "Volver a buscar" with what it found: new, changed (renamed, moved, retagged) and removed songs. */
+@Composable
+private fun RescanRow(vm: MainViewModel) {
+    val scanning by vm.scanning.collectAsStateWithLifecycle()
+    val last by vm.lastScan.collectAsStateWithLifecycle()
+    Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+        OutlinedButton(onClick = vm::rescanAndReport, enabled = !scanning) {
+            Text(stringResource(if (scanning) R.string.rescan_running else R.string.rescan))
+        }
+        val r = last
+        if (r != null && !scanning) Text(
+            if (r.added + r.updated + r.removed == 0) stringResource(R.string.rescan_nothing)
+            else stringResource(R.string.rescan_result, r.added, r.updated, r.removed),
+            style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 12.dp),
+        )
+    }
+}

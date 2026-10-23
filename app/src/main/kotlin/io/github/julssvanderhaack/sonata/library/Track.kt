@@ -50,16 +50,14 @@ interface TrackDao {
     @Query("SELECT * FROM tracks")
     fun all(): Flow<List<Track>>
 
-    @Query("SELECT id, date_modified FROM tracks")
-    suspend fun stamps(): List<Stamp>
+    @Query("SELECT * FROM tracks")
+    suspend fun snapshot(): List<Track>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(tracks: List<Track>)
 
     @Query("DELETE FROM tracks WHERE id IN (:ids)")
     suspend fun delete(ids: List<Long>)
-
-    data class Stamp(val id: Long, @ColumnInfo(name = "date_modified") val dateModified: Long)
 }
 
 @Database(entities = [Track::class], version = 2)
