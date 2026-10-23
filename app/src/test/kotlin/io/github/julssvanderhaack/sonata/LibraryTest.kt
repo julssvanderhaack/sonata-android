@@ -212,3 +212,51 @@ class ScanDiffTest {
         assertTrue(d.upsert.isEmpty() && d.delete.isEmpty())
     }
 }
+
+class FolderScanTest {
+    @Test
+    fun treeRootsMapToVolumeAndFolder() {
+        assertEquals("external_primary" to "Music/", Scanner.locate("primary:Music"))
+        assertEquals("external_primary" to "Music/Rock/", Scanner.locate("primary:Music/Rock/"))
+        assertEquals("external_primary" to "", Scanner.locate("primary:"))
+        assertEquals("1234-abcd" to "Música/", Scanner.locate("1234-ABCD:Música"))
+        assertEquals("external_primary" to "Documents/Sftp/", Scanner.locate("home:Sftp"))
+        assertEquals("external_primary" to "", Scanner.locate("msf:1234"))
+    }
+
+    @Test
+    fun theSameFileThroughTwoTreesIsOneTrack() {
+        // "Music" and "Music/Rock" both picked: Rock's songs must not appear twice
+        assertEquals(Scanner.idOf("external_primary", "Music/Rock/a.mp3"), Scanner.idOf("external_primary", "Music/Rock/a.mp3"))
+        assertTrue(Scanner.idOf("external_primary", "Music/a.mp3") != Scanner.idOf("1234-abcd", "Music/a.mp3"))
+    }
+
+    @Test
+    fun audioByMimeOrExtension() {
+        assertTrue(Scanner.isAudio("a.flac", null))
+        assertTrue(Scanner.isAudio("a.OPUS", "application/octet-stream"))
+        assertTrue(Scanner.isAudio("sin extensión", "audio/mpeg"))
+        assertFalse(Scanner.isAudio("cover.jpg", "image/jpeg"))
+        assertFalse(Scanner.isAudio("letra.lrc", "application/octet-stream"))
+    }
+
+    @Test
+    fun tagsAreParsedLikeMediaStoreDid() {
+        val t = Scanner.trackOf(
+            id = 1, uri = "content://x", name = "03 Entre dos aguas.flac", size = 1, modified = 5000, mime = "audio/flac",
+            volume = "external_primary", relativePath = "Music/", lrcUri = null, coverUri = null, dateAdded = 5,
+            tags = Scanner.Tags(
+                title = "Entre dos aguas", artist = "Paco de LucÃ­a", album = "  ", year = "1976-01-01",
+                track = "3/8", disc = "1/2", durationMs = 360_000,
+            ),
+        )
+        assertEquals("Paco de Lucía", t.artist)
+        assertNull(t.album)
+        assertEquals(1976, t.year)
+        assertEquals(3, t.trackNo)
+        assertEquals(1, t.discNo)
+        // no title tag: the file name without extension
+        val u = Scanner.trackOf(1, "", "02 Solera.mp3", 1, 0, null, "external_primary", "", null, null, Scanner.Tags(), 0)
+        assertEquals("02 Solera", u.title)
+    }
+}

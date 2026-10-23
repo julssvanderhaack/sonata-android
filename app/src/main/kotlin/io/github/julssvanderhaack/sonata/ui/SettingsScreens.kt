@@ -20,6 +20,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CreateNewFolder
+import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Close
@@ -145,6 +147,7 @@ fun SettingsScreen(vm: MainViewModel) {
                     style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 16.dp),
                 )
+                MusicFoldersRows(vm, s.musicFolders)
                 RescanRow(vm)
                 StepSlider(stringResource(R.string.min_duration), f.minDurationSec, DURATION_STEPS, { if (it == 0) "—" else "$it s" }) { v ->
                     vm.updateFilter { it.copy(minDurationSec = v) }
@@ -157,14 +160,6 @@ fun SettingsScreen(vm: MainViewModel) {
                     if (f.excludedFolders.isEmpty()) stringResource(R.string.folders_all)
                     else pluralStringResource(R.plurals.folders_hidden, f.excludedFolders.size, f.excludedFolders.size),
                 ) { vm.open(Route.Folders) }
-
-                SectionTitle(stringResource(R.string.include_kinds))
-                SwitchRow(stringResource(R.string.kind_podcasts), checked = f.includePodcasts) { v -> vm.updateFilter { it.copy(includePodcasts = v) } }
-                SwitchRow(stringResource(R.string.kind_audiobooks), checked = f.includeAudiobooks) { v -> vm.updateFilter { it.copy(includeAudiobooks = v) } }
-                SwitchRow(stringResource(R.string.kind_recordings), checked = f.includeRecordings) { v -> vm.updateFilter { it.copy(includeRecordings = v) } }
-                SwitchRow(stringResource(R.string.kind_ringtones), checked = f.includeRingtones) { v -> vm.updateFilter { it.copy(includeRingtones = v) } }
-                SwitchRow(stringResource(R.string.kind_notifications), checked = f.includeNotifications) { v -> vm.updateFilter { it.copy(includeNotifications = v) } }
-                SwitchRow(stringResource(R.string.kind_alarms), checked = f.includeAlarms) { v -> vm.updateFilter { it.copy(includeAlarms = v) } }
 
                 SectionTitle(stringResource(R.string.patterns))
                 Text(
@@ -318,10 +313,43 @@ private fun RescanRow(vm: MainViewModel) {
         }
         val r = last
         if (r != null && !scanning) Text(
-            if (r.added + r.updated + r.removed == 0) stringResource(R.string.rescan_nothing)
-            else stringResource(R.string.rescan_result, r.added, r.updated, r.removed),
+            vm.describe(r),
             style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(start = 12.dp),
         )
     }
+}
+
+/** The folders the library is walked from, each removable, plus "Añadir carpeta". */
+@Composable
+private fun MusicFoldersRows(vm: MainViewModel, trees: List<String>) {
+    val pick = rememberMusicFolderPicker(vm)
+    Text(
+        stringResource(R.string.music_folders), style = MaterialTheme.typography.bodyLarge,
+        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 12.dp),
+    )
+    if (trees.isEmpty()) Text(
+        stringResource(R.string.music_folders_none), style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp),
+    )
+    trees.forEach { tree ->
+        Row(Modifier.fillMaxWidth().padding(start = 16.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Rounded.Folder, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(end = 12.dp))
+            Text(vm.folderLabel(tree), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+            IconButton(onClick = { vm.removeMusicFolder(tree) }) { Icon(Icons.Rounded.Close, stringResource(R.string.remove)) }
+        }
+    }
+    TextButton(onClick = pick, modifier = Modifier.padding(horizontal = 8.dp)) {
+        Icon(Icons.Rounded.CreateNewFolder, null, modifier = Modifier.padding(end = 8.dp))
+        Text(stringResource(R.string.music_folder_add))
+    }
+}
+
+/** Opens the system folder picker; the chosen folder joins the library. */
+@Composable
+fun rememberMusicFolderPicker(vm: MainViewModel): () -> Unit {
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        if (uri != null) vm.addMusicFolder(uri)
+    }
+    return { launcher.launch(null) }
 }

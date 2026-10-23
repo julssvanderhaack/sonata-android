@@ -3,12 +3,12 @@ package io.github.julssvanderhaack.sonata.player
 import android.content.ComponentName
 import android.content.Context
 import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
-import io.github.julssvanderhaack.sonata.library.Scanner
 import io.github.julssvanderhaack.sonata.library.Track
 import io.github.julssvanderhaack.sonata.library.albumOrFolder
 import io.github.julssvanderhaack.sonata.library.artistOrNull
@@ -109,7 +109,7 @@ class PlayerConnection(private val context: Context) {
 
     private fun toItem(t: Track) = MediaItem.Builder()
         .setMediaId(t.id.toString())
-        .setUri(Scanner.uriOf(t.id))
+        .setUri(t.uri.toUri())
         .setMediaMetadata(
             MediaMetadata.Builder()
                 .setTitle(t.title)

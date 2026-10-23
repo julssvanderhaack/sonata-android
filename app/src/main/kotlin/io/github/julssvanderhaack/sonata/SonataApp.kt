@@ -10,6 +10,7 @@ import io.github.julssvanderhaack.sonata.eq.EqBus
 import io.github.julssvanderhaack.sonata.library.LibraryDb
 import io.github.julssvanderhaack.sonata.lyrics.LyricsRepository
 import io.github.julssvanderhaack.sonata.library.Scanner
+import io.github.julssvanderhaack.sonata.library.TrackIndex
 import io.github.julssvanderhaack.sonata.player.PlayerConnection
 import io.github.julssvanderhaack.sonata.settings.Settings
 import io.github.julssvanderhaack.sonata.theme.ThemeRepository
@@ -21,6 +22,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -51,7 +54,7 @@ class SonataApp : Application() {
     override fun onCreate() {
         super.onCreate()
         db = Room.databaseBuilder(this, LibraryDb::class.java, "library.db")
-            .fallbackToDestructiveMigration(dropAllTables = true) // it's a cache of MediaStore
+            .fallbackToDestructiveMigration(dropAllTables = true) // a cache of the music folders: rebuilt by the next scan
             .build()
         settings = Settings(this)
         themes = ThemeRepository(this)
@@ -67,10 +70,18 @@ class SonataApp : Application() {
         }
     }
 
-    /** Called once the audio permission is granted: scans now and again whenever MediaStore changes. */
+    private var started = false
+    private var lastScanAt = 0L
+    private var again = false
+
+    /** Called once at launch: scans now, whenever the music folders change and when MediaStore notices changes. */
     fun startLibrary() {
-        rescan()
-        if (observer != null) return
+        if (started) return
+        started = true
+        lastScanAt = System.currentTimeMillis() // the scan below counts: no second one from coming to the foreground
+        scope.launch { db.tracks().all().collect { TrackIndex.byId = it.associateBy { t -> t.id } } }
+        // the first value starts the initial scan
+        scope.launch { settings.flow.map { it.musicFolders }.distinctUntilChanged().collect { rescan() } }
         observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
             override fun onChange(selfChange: Boolean) {
                 // copying an album fires one change per file; wait for the burst to end
@@ -83,21 +94,35 @@ class SonataApp : Application() {
         }.also { contentResolver.registerContentObserver(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, true, it) }
     }
 
+    /** Back in the foreground: files may have arrived meanwhile (SFTP, a cable…) without anyone telling. */
+    fun rescanIfStale() {
+        if (started && System.currentTimeMillis() - lastScanAt > 2 * 60_000) rescan()
+    }
+
     private val scanLock = Mutex()
 
-    /** Background scan (MediaStore changed); skipped if one is already running. */
+    /** Background scan; if one is running, another follows it so nothing asked for is lost. */
     fun rescan() {
-        if (scanLock.isLocked) return
+        if (scanLock.isLocked) {
+            again = true
+            return
+        }
         scope.launch { scanNow() }
     }
 
     /** Scans and reports what changed. Waits for a scan already running, then does a fresh one. */
-    suspend fun scanNow(): Scanner.Result = scanLock.withLock {
-        _scanning.value = true
-        try {
-            scanner.scan()
-        } finally {
-            _scanning.value = false
+    suspend fun scanNow(): Scanner.Result {
+        val r = scanLock.withLock {
+            _scanning.value = true
+            again = false
+            try {
+                scanner.scan(settings.flow.first().musicFolders)
+            } finally {
+                lastScanAt = System.currentTimeMillis()
+                _scanning.value = false
+            }
         }
+        if (again) rescan()
+        return r
     }
 }

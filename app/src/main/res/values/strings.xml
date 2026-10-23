@@ -25,7 +25,13 @@
     <string name="volume_internal">Almacenamiento interno</string>
     <string name="volume_sd">Tarjeta SD (%1$s)</string>
     <string name="empty_title">No se ha encontrado música</string>
-    <string name="empty_none">El teléfono no tiene archivos de audio en el almacenamiento compartido.</string>
+    <string name="empty_none">No hay archivos de audio en las carpetas de música elegidas.</string>
+    <string name="choose_title">¿Dónde está tu música?</string>
+    <string name="choose_text">Elige una o varias carpetas. Sonata las recorre con sus subcarpetas y aplica los filtros de Ajustes. No sube nada a ningún sitio.</string>
+    <string name="music_folders">Carpetas de música</string>
+    <string name="music_folders_none">Ninguna todavía</string>
+    <string name="music_folder_add">Añadir carpeta</string>
+    <string name="scan_reading">Leyendo etiquetas: %1$d de %2$d</string>
     <string name="library_filters">Filtros</string>
     <string name="rescan">Volver a buscar</string>
     <string name="rescan_running">Buscando…</string>
@@ -57,9 +63,6 @@
     <string name="back">Atrás</string>
 
     <!-- Permiso -->
-    <string name="permission_title">Tu música, en tu teléfono</string>
-    <string name="permission_text">Sonata necesita leer los archivos de audio para encontrar tus canciones. No sube nada a ningún sitio.</string>
-    <string name="permission_button">Permitir acceso a la música</string>
 
     <!-- Ajustes -->
     <string name="settings">Ajustes</string>
@@ -81,13 +84,6 @@
         <item quantity="other">%d carpetas ocultas</item>
     </plurals>
     <string name="folders_hint">Desmarca las carpetas que no son música. Las subcarpetas se ocultan con ellas. Aquí ya no aparecen las que excluyen los patrones.</string>
-    <string name="include_kinds">Incluir también</string>
-    <string name="kind_podcasts">Podcasts</string>
-    <string name="kind_audiobooks">Audiolibros</string>
-    <string name="kind_recordings">Grabaciones de voz y llamadas</string>
-    <string name="kind_ringtones">Tonos de llamada</string>
-    <string name="kind_notifications">Sonidos de notificación</string>
-    <string name="kind_alarms">Alarmas</string>
     <string name="patterns">Rutas excluidas</string>
     <string name="patterns_hint">Se comparan con la ruta completa del archivo. * es cualquier texto y ? un carácter; no distingue mayúsculas.</string>
     <string name="add">Añadir</string>
@@ -139,7 +135,7 @@
     <string name="lyrics_online">Buscar letras en internet</string>
     <string name="lyrics_online_note">En lrclib.net. Solo se envía el título, el artista, el álbum y la duración.</string>
     <string name="lyrics_folder">Carpeta con archivos .lrc</string>
-    <string name="lyrics_folder_none">Ninguna: elige la carpeta de tu música para usar las letras que tengas junto a las canciones</string>
+    <string name="lyrics_folder_none">Opcional: las .lrc que están junto a las canciones ya se leen solas. Elige otra carpeta solo si guardas las letras aparte.</string>
     <string name="lyrics_none">No se ha encontrado la letra de esta canción.</string>
     <string name="lyrics_none_local">Esta canción no trae la letra en el archivo.</string>
     <string name="lyrics_search_online">Buscar en lrclib.net</string>

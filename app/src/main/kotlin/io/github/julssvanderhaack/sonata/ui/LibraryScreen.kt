@@ -9,6 +9,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Button
+import androidx.compose.material.icons.rounded.LibraryMusic
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.material.icons.rounded.Check
@@ -92,7 +98,10 @@ fun LibraryScreen(vm: MainViewModel) {
     val tab = tabs.firstOrNull { it.name == tabName } ?: Tab.SONGS
     var sortMenu by remember { mutableStateOf(false) }
 
+    val snack = remember { SnackbarHostState() }
+    LaunchedEffect(Unit) { vm.scanReports.collect { snack.showSnackbar(vm.describe(it)) } }
     Scaffold(
+        snackbarHost = { SnackbarHost(snack) },
         topBar = {
             TopAppBar(
                 title = {
@@ -122,6 +131,10 @@ fun LibraryScreen(vm: MainViewModel) {
                             }
                         }
                     }
+                    // search the music folders again; the snackbar says what changed
+                    if (!searching && settings.musicFolders.isNotEmpty()) IconButton(onClick = vm::rescanAndReport, enabled = !scanning) {
+                        Icon(Icons.Rounded.Refresh, stringResource(R.string.rescan))
+                    }
                     if (!searching) IconButton(onClick = { vm.open(Route.Settings) }) {
                         Icon(Icons.Rounded.Settings, stringResource(R.string.settings))
                     }
@@ -135,7 +148,12 @@ fun LibraryScreen(vm: MainViewModel) {
                     Tab(selected = t == tab, onClick = { tabName = t.name }, text = { Text(stringResource(t.label)) })
                 }
             }
-            if (scanning) LinearProgressIndicator(Modifier.fillMaxWidth())
+            val progress by vm.scanProgress.collectAsStateWithLifecycle()
+            ScanProgress(scanning, progress)
+            if (settings.musicFolders.isEmpty()) {
+                ChooseFolders(rememberMusicFolderPicker(vm))
+                return@Column
+            }
             if (lib.loaded && lib.songs.isEmpty() && query.isBlank() && !scanning) {
                 EmptyLibrary(lib.totalFiles, onSettings = { vm.open(Route.Settings) }, onRescan = vm::rescan)
                 return@Column
@@ -200,6 +218,44 @@ private fun SearchField(value: String, onChange: (String) -> Unit) {
         ),
         modifier = Modifier.fillMaxWidth().focusRequester(focus),
     )
+}
+
+/** A bar while scanning; while tags are read (a first scan, new songs) also how far it has got. */
+@Composable
+private fun ScanProgress(scanning: Boolean, progress: Pair<Int, Int>?) {
+    if (!scanning) return
+    val p = progress?.takeIf { it.second > 0 }
+    if (p == null) {
+        LinearProgressIndicator(Modifier.fillMaxWidth())
+        return
+    }
+    LinearProgressIndicator(progress = { p.first.toFloat() / p.second }, modifier = Modifier.fillMaxWidth())
+    Text(
+        stringResource(R.string.scan_reading, p.first, p.second), style = MaterialTheme.typography.labelSmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+    )
+}
+
+/** First run: the library is built only from folders the user points at. */
+@Composable
+private fun ChooseFolders(onPick: () -> Unit) {
+    Column(
+        Modifier.fillMaxSize().padding(32.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Icon(Icons.Rounded.LibraryMusic, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(72.dp))
+        Text(
+            stringResource(R.string.choose_title), style = MaterialTheme.typography.headlineSmall,
+            textAlign = TextAlign.Center, modifier = Modifier.padding(top = 16.dp),
+        )
+        Text(
+            stringResource(R.string.choose_text), style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 8.dp, bottom = 24.dp),
+        )
+        Button(onClick = onPick) { Text(stringResource(R.string.music_folder_add)) }
+    }
 }
 
 @Composable

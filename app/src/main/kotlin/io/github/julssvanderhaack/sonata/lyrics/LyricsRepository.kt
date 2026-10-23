@@ -10,7 +10,6 @@ import androidx.media3.extractor.metadata.id3.BinaryFrame
 import androidx.media3.extractor.metadata.id3.TextInformationFrame
 import androidx.media3.extractor.metadata.vorbis.VorbisComment
 import androidx.media3.inspector.MetadataRetriever
-import io.github.julssvanderhaack.sonata.library.Scanner
 import io.github.julssvanderhaack.sonata.library.Track
 import io.github.julssvanderhaack.sonata.library.albumArtistOrNull
 import io.github.julssvanderhaack.sonata.library.artistOrNull
@@ -51,8 +50,8 @@ class LyricsRepository(private val context: Context) {
 
     fun load(t: Track, online: Boolean, lrcTree: String?, skipCache: Boolean): Flow<LyricsState> = flow {
         emit(LyricsState.Loading)
-        // 1. sidecar .lrc / .txt in a folder the user granted
-        lrcTree?.let { readSidecar(t, it.toUri()) }?.let { text ->
+        // 1. sidecar .lrc / .txt: next to the song (found while scanning), or in the folder granted for lyrics
+        (t.lrcUri?.let(::readUri) ?: lrcTree?.let { readSidecar(t, it.toUri()) })?.let { text ->
             val l = parseLyrics(text, Lyrics.Source.FILE)
             if (!l.isEmpty) return@flow emit(LyricsState.Ready(l))
         }
@@ -155,6 +154,12 @@ class LyricsRepository(private val context: Context) {
      * document ids are "primary:Music/…" (or "1234-ABCD:…" for an SD card), so the
      * song's MediaStore volume + relative path give the id directly, no listing.
      */
+    private fun readUri(uri: String): String? = try {
+        context.contentResolver.openInputStream(uri.toUri())?.use { it.readBytes().toString(Charsets.UTF_8) }?.takeIf { it.isNotBlank() }
+    } catch (e: Exception) {
+        null
+    }
+
     private fun readSidecar(t: Track, tree: Uri): String? {
         val root = runCatching { DocumentsContract.getTreeDocumentId(tree) }.getOrNull() ?: return null
         val volume = if (t.volume == "external_primary" || t.volume == "external") "primary" else t.volume.uppercase()
@@ -177,7 +182,7 @@ class LyricsRepository(private val context: Context) {
 
     @androidx.annotation.OptIn(UnstableApi::class)
     private fun readEmbedded(t: Track): String? = try {
-        MetadataRetriever.Builder(context, MediaItem.fromUri(Scanner.uriOf(t.id))).build().use { r ->
+        MetadataRetriever.Builder(context, MediaItem.fromUri(t.uri.toUri())).build().use { r ->
             val groups = r.retrieveTrackGroups().get(10, TimeUnit.SECONDS)
             var found: String? = null
             for (g in 0 until groups.length) {

@@ -5,8 +5,8 @@ Reproductor de música local para Android, hermano del
 [Omarchy](https://omarchy.org) como paletas de colores, que se pueden editar,
 importar y exportar en el mismo formato `colors.toml` del escritorio.
 
-> Estado: **0.3**. Hay biblioteca, filtros, temas, reproducción en segundo plano,
-> letras sincronizadas, ecualizador y espectro en vivo. Faltan las listas (ver *Pendiente*).
+> Estado: **0.4**. Hay biblioteca por carpetas, filtros, temas, reproducción en segundo plano,
+> letras sincronizadas, ecualizador, espectro en vivo y «Abrir con Sonata». Faltan las listas (ver *Pendiente*).
 
 **Descargar:** el APK está en [Releases](https://github.com/julssvanderhaack/sonata-android/releases/latest).
 Ábrelo en el móvil y acepta instalar desde fuera de la tienda. Necesita Android 8.0 o superior.
@@ -23,12 +23,21 @@ importar y exportar en el mismo formato `colors.toml` del escritorio.
 
 ## Qué hace
 
-- **Encuentra la música sola** a través de MediaStore, el índice que Android ya
-  mantiene del almacenamiento interno y de la tarjeta SD. No pide "acceso a todos los
-  archivos": basta con el permiso de audio. Vuelve a buscar sola cuando cambian los
-  archivos.
+- **Busca en las carpetas que tú eliges** (una o varias, en *Ajustes → Biblioteca* o al
+  abrirla por primera vez), con sus subcarpetas. Las recorre y lee las etiquetas ella
+  misma, sin depender de MediaStore: encuentra también lo que llega por SFTP, `adb` o
+  apps que no avisan al índice de Android. No pide permisos de almacenamiento: cada
+  carpeta elegida con el selector del sistema da acceso a sí misma.
+  - Solo vuelve a leer las etiquetas de lo nuevo o modificado; la primera vez la
+    biblioteca se va llenando mientras lee, con un contador.
+  - Botón ⟳ en la biblioteca para volver a buscar; dice cuántas canciones son nuevas,
+    han cambiado (renombradas, movidas, reetiquetadas) o ya no están. También busca sola
+    al abrir la app, al volver a ella pasados dos minutos y cuando Android avisa de cambios.
+  - De paso encuentra el `.lrc` con el mismo nombre que cada canción y la carátula de la
+    carpeta (`cover.jpg`, `folder.jpg`…).
+- **Abrir con Sonata**: los exploradores de archivos ofrecen Sonata para los archivos de
+  audio, aunque no estén en las carpetas de la biblioteca.
 - **Descarta lo que no es música**:
-  - tonos, notificaciones, alarmas y grabaciones (MediaStore los marca);
   - lo que dure menos que la *duración mínima* (10 s por defecto) o pese menos que el
     *tamaño mínimo* (100 KB);
   - notas de voz y audios de WhatsApp y Telegram, carpetas `Android/…` de las apps,
@@ -138,7 +147,7 @@ app/src/main/kotlin/io/github/julssvanderhaack/sonata/
   lyrics/    parseLyrics (LRC), LyricsRepository (.lrc, etiquetas, caché, lrclib.net)
   eq/        filtros y preajustes (port de eq.cpp), EqProcessor dentro de ExoPlayer
   spectrum/  SpectrumSink (captura sincronizada con el altavoz), Analyzer (port de spectrum.cpp)
-  library/   Track + Room, Scanner (MediaStore), LibraryFilter, Grouping (álbumes, artistas…)
+  library/   Track + Room, Scanner (carpetas elegidas por SAF), LibraryFilter, Grouping (álbumes, artistas…)
   player/    PlaybackService (MediaSessionService), PlayerConnection (MediaController)
   settings/  Settings (DataStore)
   ui/        pantallas Compose y navegación
@@ -146,8 +155,7 @@ app/src/main/kotlin/io/github/julssvanderhaack/sonata/
 
 ## Pendiente
 
-- FFmpeg para formatos que Android no decodifica (WMA, APE…), con etiquetas leídas por
-  la propia app en lugar de MediaStore.
+- FFmpeg para formatos que Android no decodifica (WMA, APE…).
 - Listas de reproducción, cola editable y `MediaLibraryService` para Android Auto y
   para reanudar desde los controles del sistema.
 - Traducción al inglés (`values-en`) antes de publicar.

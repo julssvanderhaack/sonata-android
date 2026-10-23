@@ -1,6 +1,9 @@
 package io.github.julssvanderhaack.sonata.ui
 
 import android.app.Application
+import androidx.core.net.toUri
+import android.provider.DocumentsContract
+import android.content.Intent
 import android.net.Uri
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.AndroidViewModel
@@ -26,11 +29,13 @@ import io.github.julssvanderhaack.sonata.library.groupGenres
 import io.github.julssvanderhaack.sonata.library.matchesQuery
 import io.github.julssvanderhaack.sonata.library.songComparator
 import io.github.julssvanderhaack.sonata.library.Scanner
+import io.github.julssvanderhaack.sonata.library.TrackIndex
 import io.github.julssvanderhaack.sonata.lyrics.LyricsState
 import io.github.julssvanderhaack.sonata.settings.AppSettings
 import io.github.julssvanderhaack.sonata.theme.Palette
 import io.github.julssvanderhaack.sonata.theme.ResolvedPalette
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -61,7 +66,7 @@ sealed interface Route {
 
 data class LibraryView(
     val loaded: Boolean = false,
-    /** Audio files MediaStore reported, before filtering. */
+    /** Audio files found in the music folders, before filtering. */
     val totalFiles: Int = 0,
     val songs: List<Track> = emptyList(),
     val albums: List<Album> = emptyList(),
@@ -71,7 +76,7 @@ data class LibraryView(
     val folders: List<FolderNode> = emptyList(),
     /** Tree for the Carpetas filter screen: everything except the folder exclusions themselves. */
     val folderChoices: List<FolderNode> = emptyList(),
-    /** Every track MediaStore knows, filtered or not: the queue may outlive a filter change. */
+    /** Every track found, filtered or not: the queue may outlive a filter change. */
     val byId: Map<Long, Track> = emptyMap(),
 )
 
@@ -141,7 +146,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             library.map { it.byId }.distinctUntilChanged(),
             settings.map { it.onlineLyrics to it.lyricsTree }.distinctUntilChanged(),
             lyricsReload,
-        ) { id, byId, (online, tree), reload -> Triple(id?.let { byId[it] }, online to tree, reload) }
+        ) { id, byId, (online, tree), reload -> Triple(id?.let { byId[it] ?: TrackIndex.opened[it] }, online to tree, reload) }
             .distinctUntilChanged()
             .flatMapLatest { (track, opts, reload) ->
                 if (track == null) flowOf(LyricsState.Idle)
@@ -167,12 +172,55 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun updateEq(block: (EqSettings) -> EqSettings) { EqBus.settings.value = block(EqBus.settings.value) }
 
     fun startLibrary() = sonata.startLibrary()
+    fun rescanIfStale() = sonata.rescanIfStale()
+    val scanProgress = sonata.scanner.progress
+
+    /** Keeps read access to [tree] across reboots and adds it to the folders the library is built from. */
+    fun addMusicFolder(tree: Uri) = viewModelScope.launch {
+        runCatching { app.contentResolver.takePersistableUriPermission(tree, Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+        val now = settings.value.musicFolders
+        if (tree.toString() !in now) sonata.settings.setMusicFolders(now + tree.toString())
+    }
+
+    fun removeMusicFolder(tree: String) = viewModelScope.launch {
+        sonata.settings.setMusicFolders(settings.value.musicFolders - tree)
+        // the lyrics folder may be the same tree: keep the grant while it's still used
+        if (settings.value.lyricsTree != tree) runCatching {
+            app.contentResolver.releasePersistableUriPermission(tree.toUri(), Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        }
+    }
+
+    /** "Almacenamiento interno/Music" for a picked tree. */
+    fun folderLabel(tree: String): String {
+        val doc = runCatching { DocumentsContract.getTreeDocumentId(tree.toUri()) }.getOrNull() ?: return tree
+        val (volume, rel) = Scanner.locate(doc)
+        return listOf(volumeLabel(volume), rel.trimEnd('/')).filter { it.isNotEmpty() }.joinToString("/")
+    }
     fun rescan() = sonata.rescan()
 
     /** Result of the last scan asked for with the button, shown under it. */
     val lastScan = MutableStateFlow<Scanner.Result?>(null)
 
-    fun rescanAndReport() = viewModelScope.launch { lastScan.value = sonata.scanNow() }
+    /** One message per finished scan asked for by the user, for the library's snackbar. */
+    val scanReports = MutableSharedFlow<Scanner.Result>(extraBufferCapacity = 1)
+
+    fun rescanAndReport() = viewModelScope.launch {
+        val r = sonata.scanNow()
+        lastScan.value = r
+        scanReports.tryEmit(r)
+    }
+
+    fun describe(r: Scanner.Result): String =
+        if (r.added + r.updated + r.removed == 0) app.getString(R.string.rescan_nothing)
+        else app.getString(R.string.rescan_result, r.added, r.updated, r.removed)
+
+    /** "Abrir con Sonata" from a file manager: play that file now and show it. */
+    fun openExternal(uri: Uri) = viewModelScope.launch {
+        val t = sonata.scanner.readOne(uri)
+        TrackIndex.opened = TrackIndex.opened + (t.id to t)
+        player.play(listOf(t), 0)
+        if (stack.lastOrNull() != Route.NowPlaying) open(Route.NowPlaying)
+    }
 
     fun setSongSort(s: SongSort) = viewModelScope.launch { sonata.settings.setSongSort(s) }
     fun setTheme(name: String) = viewModelScope.launch { sonata.settings.setTheme(name) }

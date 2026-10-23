@@ -25,6 +25,8 @@ data class AppSettings(
     val onlineLyrics: Boolean = false,
     /** SAF tree the user granted for reading .lrc files next to the songs. */
     val lyricsTree: String? = null,
+    /** SAF trees the library is built from, walked with their subfolders. */
+    val musicFolders: List<String> = emptyList(),
 ) {
     companion object {
         const val DEFAULT_THEME = "cobalt2"
@@ -49,6 +51,7 @@ class Settings(private val context: Context) {
         val onlineLyrics = booleanPreferencesKey("online_lyrics")
         val lyricsTree = stringPreferencesKey("lyrics_tree")
         val eq = stringPreferencesKey("eq")
+        val musicFolders = stringPreferencesKey("music_folders")
     }
 
     val flow: Flow<AppSettings> = context.store.data.map { p ->
@@ -71,6 +74,7 @@ class Settings(private val context: Context) {
             songSort = p[K.songSort]?.let { runCatching { SongSort.valueOf(it) }.getOrNull() } ?: SongSort.TITLE,
             onlineLyrics = p[K.onlineLyrics] ?: false,
             lyricsTree = p[K.lyricsTree],
+            musicFolders = p[K.musicFolders]?.lines()?.filter { it.isNotBlank() } ?: emptyList(),
         )
     }
 
@@ -80,6 +84,8 @@ class Settings(private val context: Context) {
     suspend fun setEq(s: EqSettings) = set { it[K.eq] = s.serialize() }
     suspend fun setOnlineLyrics(on: Boolean) = set { it[K.onlineLyrics] = on }
     suspend fun setLyricsTree(uri: String?) = set { if (uri == null) it.remove(K.lyricsTree) else it[K.lyricsTree] = uri }
+
+    suspend fun setMusicFolders(trees: List<String>) = set { it[K.musicFolders] = trees.joinToString("\n") }
 
     private suspend fun set(block: (androidx.datastore.preferences.core.MutablePreferences) -> Unit) {
         context.store.edit { block(it) }

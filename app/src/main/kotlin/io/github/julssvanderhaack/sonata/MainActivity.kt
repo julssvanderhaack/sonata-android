@@ -1,5 +1,6 @@
 package io.github.julssvanderhaack.sonata
 
+import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -19,6 +20,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // a rotation recreates the activity with the same intent: open the file only once
+        if (savedInstanceState == null) handle(intent)
         setContent {
             val palette by vm.palette.collectAsStateWithLifecycle()
             val settings by vm.settings.collectAsStateWithLifecycle()
@@ -32,5 +35,16 @@ class MainActivity : ComponentActivity() {
                 AppRoot(vm)
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handle(intent)
+    }
+
+    /** "Abrir con Sonata" from a file manager or another app. */
+    private fun handle(intent: Intent?) {
+        val uri = intent?.takeIf { it.action == Intent.ACTION_VIEW }?.data ?: return
+        vm.openExternal(uri)
     }
 }
