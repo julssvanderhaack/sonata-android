@@ -13,11 +13,12 @@ import org.junit.Test
 import kotlin.math.PI
 import kotlin.math.ln
 import kotlin.math.pow
+import kotlin.math.roundToInt
 import kotlin.math.sin
 
 class SpectrumTest {
     private val rate = 44100
-    private val bands = 48
+    private val points = 96
 
     @After
     fun reset() {
@@ -25,47 +26,83 @@ class SpectrumTest {
         SpectrumBus.clear()
     }
 
-    private fun bandOf(hz: Double) = (ln(hz / SPECTRUM_LO_HZ) / ln(spectrumHiHz(rate) / SPECTRUM_LO_HZ) * bands).toInt()
+    private fun pointOf(hz: Double) = (ln(hz / SPECTRUM_LO_HZ) / ln(spectrumHiHz(rate) / SPECTRUM_LO_HZ) * (points - 1)).roundToInt()
 
     private fun sine(a: Analyzer, hz: Double, amp: Double) {
         for (i in 0 until a.n) a.samples[i] = (amp * sin(2 * PI * hz * i / rate)).toFloat()
     }
 
     @Test
-    fun sinePeaksInItsBand() {
+    fun sinePeaksAtItsPoint() {
         val a = Analyzer()
         sine(a, 1000.0, 1.0)
-        a.analyse(rate, bands, null)
+        a.analyse(rate, points, null)
         val top = a.target.indices.maxBy { a.target[it] }
-        assertEquals(bandOf(1000.0), top)
-        // full scale at 1 kHz is 0 dB, the top of the view
-        assertEquals(1f, a.target[top], 0.02f)
-        // a -36 dB sine sits half way up
-        sine(a, 1000.0, 10.0.pow(-36.0 / 20))
-        a.analyse(rate, bands, null)
-        assertEquals(0.5f, a.target[top], 0.03f)
+        assertTrue("peak at $top, 1 kHz is ${pointOf(1000.0)}", kotlin.math.abs(top - pointOf(1000.0)) <= 1)
+        // a pure tone is a narrow bump (the slice average and the blur spread it, like on desktop),
+        // and a quieter one is lower
+        val loud = a.target[top]
+        sine(a, 1000.0, 0.1)
+        a.analyse(rate, points, null)
+        assertTrue("0 dB $loud vs -20 dB ${a.target[top]}", a.target[top] < loud - 0.05f)
+    }
+
+    @Test
+    fun levelsScaleWithLoudness() {
+        // broadband (like music): 20 dB quieter is 20/72 of the view lower everywhere above the floor
+        val a = Analyzer()
+        val rnd = java.util.Random(7)
+        val noise = FloatArray(a.n) { rnd.nextGaussian().toFloat() * 0.4f }
+        noise.copyInto(a.samples)
+        a.analyse(rate, points, null)
+        val loud = a.target.copyOf()
+        for (i in 0 until a.n) a.samples[i] = noise[i] * 0.1f
+        a.analyse(rate, points, null)
+        var checked = 0
+        for (i in 0 until points) {
+            if (a.target[i] < 0.15f) continue // on or near the floor: clamped, so not linear
+            assertEquals("point $i", 20f / 72f, loud[i] - a.target[i], 0.02f)
+            checked++
+        }
+        assertTrue("only $checked points above the floor", checked > points / 2)
     }
 
     @Test
     fun equaliserCurveIsShown() {
         val a = Analyzer()
-        sine(a, 1000.0, 0.01) // -40 dB
-        a.analyse(rate, bands, null)
-        val flat = a.target[bandOf(1000.0)]
+        // broadband, like music: a pure tone leaves its neighbours on the floor and the blur would dilute the boost
+        val rnd = java.util.Random(1)
+        for (i in 0 until a.n) a.samples[i] = (rnd.nextGaussian() * 0.05).toFloat()
+        a.analyse(rate, points, null)
+        val at = pointOf(1000.0)
+        val flat = a.target[at]
         val boost = EqSettings(enabled = true, autoPreamp = false, gains = List(BANDS) { if (it == 5) 12f else 0f })
-        a.analyse(rate, bands, boost)
+        a.analyse(rate, points, boost)
         // +12 dB of a 72 dB view
-        assertEquals(12f / 72f, a.target[bandOf(1000.0)] - flat, 0.02f)
+        assertEquals(12f / 72f, a.target[at] - flat, 0.03f)
     }
 
     @Test
-    fun barsRiseAndFall() {
+    fun axisRunsToNyquist() {
+        assertEquals(1.0, Analyzer.xOf(22050.0, 44100), 1e-9)
+        assertEquals(1.0, Analyzer.xOf(48000.0, 96000), 1e-9)
+        assertEquals(0.0, Analyzer.xOf(20.0, 44100), 1e-9)
+    }
+
+    @Test
+    fun curveRisesQuicklyAndFallsSlowly() {
         val a = Analyzer()
         sine(a, 440.0, 0.5)
-        a.analyse(rate, bands, null)
-        a.step(0.033f)
-        assertTrue(a.level.max() > 0.5f)
-        a.silence(bands)
+        a.analyse(rate, points, null)
+        val at = a.target.indices.maxBy { a.target[it] }
+        val t = a.target[at]
+        a.step(0.09f) // one rise time constant
+        assertEquals(t * 0.632f, a.level[at], 0.02f)
+        repeat(30) { a.step(0.033f) }
+        val high = a.level[at]
+        a.silence(points)
+        a.step(0.09f) // the same time falls much less than it rose
+        assertTrue("fell to ${a.level[at]} from $high", a.level[at] > high * 0.7f)
         repeat(200) { a.step(0.033f) }
         assertTrue(a.settled)
     }
