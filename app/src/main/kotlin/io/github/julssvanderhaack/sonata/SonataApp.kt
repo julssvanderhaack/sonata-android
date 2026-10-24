@@ -8,8 +8,10 @@ import android.provider.MediaStore
 import androidx.room.Room
 import io.github.julssvanderhaack.sonata.eq.EqBus
 import io.github.julssvanderhaack.sonata.library.LibraryDb
+import io.github.julssvanderhaack.sonata.library.PlaylistDb
 import io.github.julssvanderhaack.sonata.lyrics.LyricsRepository
 import io.github.julssvanderhaack.sonata.library.Scanner
+import io.github.julssvanderhaack.sonata.library.Track
 import io.github.julssvanderhaack.sonata.library.TrackIndex
 import io.github.julssvanderhaack.sonata.player.PlayerConnection
 import io.github.julssvanderhaack.sonata.settings.Settings
@@ -35,6 +37,8 @@ class SonataApp : Application() {
     val scope: CoroutineScope = MainScope()
     lateinit var db: LibraryDb
         private set
+    lateinit var playlists: PlaylistDb
+        private set
     lateinit var settings: Settings
         private set
     lateinit var themes: ThemeRepository
@@ -56,6 +60,8 @@ class SonataApp : Application() {
         db = Room.databaseBuilder(this, LibraryDb::class.java, "library.db")
             .fallbackToDestructiveMigration(dropAllTables = true) // a cache of the music folders: rebuilt by the next scan
             .build()
+        // the user's own data: never dropped; schema changes get real migrations
+        playlists = Room.databaseBuilder(this, PlaylistDb::class.java, "playlists.db").build()
         settings = Settings(this)
         themes = ThemeRepository(this)
         scanner = Scanner(this, db.tracks())
@@ -124,5 +130,11 @@ class SonataApp : Application() {
         }
         if (again) rescan()
         return r
+    }
+
+    /** The library as the user sees it (the filters applied): what the system's media browser lists. */
+    suspend fun visibleTracks(): List<Track> {
+        val keep = settings.flow.first().filter.compile()
+        return db.tracks().snapshot().filter(keep)
     }
 }

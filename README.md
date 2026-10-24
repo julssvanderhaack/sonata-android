@@ -5,8 +5,9 @@ Reproductor de música local para Android, hermano del
 [Omarchy](https://omarchy.org) como paletas de colores, que se pueden editar,
 importar y exportar en el mismo formato `colors.toml` del escritorio.
 
-> Estado: **0.4**. Hay biblioteca por carpetas, filtros, temas, reproducción en segundo plano,
-> letras sincronizadas, ecualizador, espectro en vivo y «Abrir con Sonata». Faltan las listas (ver *Pendiente*).
+> Estado: **0.5**. Hay biblioteca por carpetas, filtros, temas, reproducción en segundo plano,
+> cola editable, listas de reproducción, reanudar con la app cerrada, letras sincronizadas,
+> ecualizador, espectro en vivo y «Abrir con Sonata». Faltan las listas (ver *Pendiente*).
 
 **Descargar:** el APK está en [Releases](https://github.com/julssvanderhaack/sonata-android/releases/latest).
 Ábrelo en el móvil y acepta instalar desde fuera de la tienda. Necesita Android 8.0 o superior.
@@ -35,6 +36,21 @@ importar y exportar en el mismo formato `colors.toml` del escritorio.
     al abrir la app, al volver a ella pasados dos minutos y cuando Android avisa de cambios.
   - De paso encuentra el `.lrc` con el mismo nombre que cada canción y la carátula de la
     carpeta (`cover.jpg`, `folder.jpg`…).
+- **Cola y listas**:
+  - mantener pulsada una canción: *Reproducir a continuación*, *Añadir a la cola*,
+    *Añadir a una lista…*; el ⋮ de un álbum, artista, género o carpeta hace lo mismo con
+    todas sus canciones;
+  - pantalla *Cola* (desde *Sonando*): tocar para saltar, ✕ para quitar, arrastrar para
+    reordenar, *Guardar como lista*;
+  - pestaña *Listas*: crear, renombrar, borrar, reordenar y quitar canciones. Se guardan
+    en una base de datos aparte de la biblioteca, así que ni volver a buscar ni actualizar
+    la app las borra. Una canción que ya no está sigue en la lista con su nombre.
+- **La cola sobrevive**: se guardan la cola, la canción, la posición, el aleatorio y la
+  repetición; al volver a abrir Sonata está donde la dejaste, en pausa.
+- **Reanudar con la app cerrada**: el *play* de los auriculares o del coche y la tarjeta
+  multimedia del sistema la despiertan y siguen con la cola guardada. El servicio es un
+  `MediaLibraryService`, así que el sistema (y Android Auto) pueden navegar por listas,
+  álbumes, artistas y canciones.
 - **Abrir con Sonata**: los exploradores de archivos ofrecen Sonata para los archivos de
   audio, aunque no estén en las carpetas de la biblioteca.
 - **Descarta lo que no es música**:
@@ -156,8 +172,8 @@ app/src/main/kotlin/io/github/julssvanderhaack/sonata/
 ## Pendiente
 
 - FFmpeg para formatos que Android no decodifica (WMA, APE…).
-- Listas de reproducción, cola editable y `MediaLibraryService` para Android Auto y
-  para reanudar desde los controles del sistema.
+- Declarar la app para Android Auto (`automotive_app_desc`) y probarla en un coche.
+- Importar y exportar listas `.m3u`.
 - Traducción al inglés (`values-en`) antes de publicar.
 - Revisar la licencia de cada tema de terceros antes de publicar (los de serie de
   Omarchy, Aetheria y Vulkanite son MIT).

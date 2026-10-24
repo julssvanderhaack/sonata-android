@@ -19,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
@@ -42,6 +43,7 @@ fun AppRoot(vm: MainViewModel) {
         vm.player.connect()
     }
     LifecycleEventEffect(Lifecycle.Event.ON_START) { vm.rescanIfStale() }
+    CompositionLocalProvider(LocalVm provides vm) {
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
         val now by vm.nowPlaying.collectAsStateWithLifecycle()
         val route = vm.stack.last()
@@ -62,9 +64,13 @@ fun AppRoot(vm: MainViewModel) {
                     Route.Themes -> ThemesScreen(vm)
                     is Route.ThemeEditor -> ThemeEditorScreen(vm, route.base, route.editing)
                     Route.Equalizer -> EqScreen(vm)
+                    Route.Queue -> QueueScreen(vm)
+                    is Route.PlaylistDetail -> PlaylistScreen(vm, route.id)
                 }
             }
             if (mini) MiniPlayer(vm, Modifier.navigationBarsPadding())
         }
+    }
+    AddToPlaylistDialog(vm)
     }
 }

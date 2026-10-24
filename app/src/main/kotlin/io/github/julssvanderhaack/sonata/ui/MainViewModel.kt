@@ -5,6 +5,7 @@ import androidx.core.net.toUri
 import android.provider.DocumentsContract
 import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -18,6 +19,9 @@ import io.github.julssvanderhaack.sonata.library.Artist
 import io.github.julssvanderhaack.sonata.library.FolderNode
 import io.github.julssvanderhaack.sonata.library.Genre
 import io.github.julssvanderhaack.sonata.library.LibraryFilter
+import io.github.julssvanderhaack.sonata.library.Playlist
+import io.github.julssvanderhaack.sonata.library.PlaylistItem
+import io.github.julssvanderhaack.sonata.library.PlaylistSummary
 import io.github.julssvanderhaack.sonata.library.SongSort
 import io.github.julssvanderhaack.sonata.library.Track
 import io.github.julssvanderhaack.sonata.library.folderTree
@@ -35,6 +39,7 @@ import io.github.julssvanderhaack.sonata.settings.AppSettings
 import io.github.julssvanderhaack.sonata.theme.Palette
 import io.github.julssvanderhaack.sonata.theme.ResolvedPalette
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -62,6 +67,8 @@ sealed interface Route {
     /** [base] is the theme to start from; [editing] = overwrite it instead of saving a copy. */
     data class ThemeEditor(val base: String, val editing: Boolean) : Route
     data object Equalizer : Route
+    data object Queue : Route
+    data class PlaylistDetail(val id: Long) : Route
 }
 
 data class LibraryView(
@@ -128,6 +135,48 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             )
         }.flowOn(Dispatchers.Default)
             .stateIn(viewModelScope, SharingStarted.Eagerly, LibraryView())
+
+    // --- queue and playlists ---------------------------------------------------
+
+    val queue = player.queue
+    private val playlistDao = sonata.playlists.playlists()
+    val playlists: StateFlow<List<PlaylistSummary>> =
+        playlistDao.summaries().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    fun playlist(id: Long): Flow<Playlist?> = playlistDao.playlist(id)
+    fun playlistItems(id: Long): Flow<List<PlaylistItem>> = playlistDao.items(id)
+
+    /** Songs waiting for "Añadir a una lista…": the picker dialog shows while this isn't null. */
+    val addingToPlaylist = MutableStateFlow<List<Track>?>(null)
+
+    private fun toast(text: String) = Toast.makeText(app, text, Toast.LENGTH_SHORT).show()
+
+    fun playNext(songs: List<Track>) {
+        player.playNext(songs)
+        toast(app.getString(R.string.queued_next))
+    }
+
+    fun enqueue(songs: List<Track>) {
+        player.enqueue(songs)
+        toast(app.getString(R.string.queued))
+    }
+
+    fun createPlaylist(name: String, songs: List<Track> = emptyList()) = viewModelScope.launch {
+        playlistDao.create(name.trim(), songs)
+        if (songs.isNotEmpty()) toast(app.getString(R.string.added_to_playlist, name.trim()))
+    }
+
+    fun addToPlaylist(p: PlaylistSummary, songs: List<Track>) = viewModelScope.launch {
+        playlistDao.append(p.id, songs)
+        toast(app.getString(R.string.added_to_playlist, p.name))
+    }
+
+    fun renamePlaylist(id: Long, name: String) = viewModelScope.launch { playlistDao.rename(id, name.trim()) }
+    fun deletePlaylist(id: Long) = viewModelScope.launch { playlistDao.delete(id) }
+    fun setPlaylistItems(id: Long, items: List<PlaylistItem>) = viewModelScope.launch { playlistDao.setItems(id, items) }
+
+    /** The queue's songs that are in the library, in play order: for "Guardar como lista". */
+    fun queueTracks(): List<Track> = queue.value.mapNotNull { e -> e.trackId?.let { TrackIndex[it] } }
 
     val nowPlaying = player.state
 
@@ -218,7 +267,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun openExternal(uri: Uri) = viewModelScope.launch {
         val t = sonata.scanner.readOne(uri)
         TrackIndex.opened = TrackIndex.opened + (t.id to t)
-        player.play(listOf(t), 0)
+        player.play(listOf(t), 0, external = true)
         if (stack.lastOrNull() != Route.NowPlaying) open(Route.NowPlaying)
     }
 

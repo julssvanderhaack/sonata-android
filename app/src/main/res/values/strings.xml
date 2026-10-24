@@ -126,6 +126,28 @@
     <string name="palette_colors">Colores de la paleta</string>
     <string name="ok">Aceptar</string>
     <string name="cancel">Cancelar</string>
+    <string name="tab_playlists">Listas</string>
+    <string name="play_next">Reproducir a continuación</string>
+    <string name="enqueue">Añadir a la cola</string>
+    <string name="add_to_playlist">Añadir a una lista…</string>
+    <string name="queued_next">Sonará a continuación</string>
+    <string name="queued">Añadido a la cola</string>
+    <string name="added_to_playlist">Añadido a «%1$s»</string>
+    <string name="queue">Cola</string>
+    <string name="queue_empty">La cola está vacía</string>
+    <string name="queue_save">Guardar como lista</string>
+    <string name="queue_clear">Quitar las demás</string>
+    <string name="queue_shuffled">Con el modo aleatorio la cola sigue el orden en que van a sonar; para moverlas, quítalo.</string>
+    <string name="new_playlist">Nueva lista</string>
+    <string name="playlist_name">Nombre de la lista</string>
+    <string name="create">Crear</string>
+    <string name="rename">Cambiar nombre</string>
+    <string name="delete_playlist">Eliminar lista</string>
+    <string name="delete_playlist_confirm">¿Eliminar «%1$s»? Las canciones no se borran del teléfono.</string>
+    <string name="playlists_empty">Todavía no hay listas. Crea una aquí o mantén pulsada una canción para añadirla.</string>
+    <string name="playlist_empty">Esta lista está vacía. Mantén pulsada una canción para añadirla.</string>
+    <string name="missing_song">No está en la biblioteca</string>
+    <string name="drag">Arrastrar para mover</string>
 
     <!-- Letras -->
     <string name="lyrics">Letra</string>

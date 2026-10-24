@@ -14,8 +14,8 @@ android {
         applicationId = "io.github.julssvanderhaack.sonata"
         minSdk = 26
         targetSdk = 37
-        versionCode = 8
-        versionName = "0.4.1"
+        versionCode = 9
+        versionName = "0.5.0"
     }
 
     // The release key lives outside the repo (~/.android/sonata-release.properties):
@@ -69,6 +69,7 @@ dependencies {
     implementation(libs.room.ktx)
     ksp(libs.room.compiler)
     implementation(libs.media3.exoplayer)
+    implementation(libs.reorderable)
     implementation(libs.media3.session)
     implementation(libs.media3.inspector)
     debugImplementation(libs.compose.ui.tooling)

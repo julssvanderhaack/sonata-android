@@ -2,6 +2,8 @@ package io.github.julssvanderhaack.sonata.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -77,10 +79,16 @@ fun albumArtistLabel(a: Album) = when {
 @Composable
 fun SongRow(t: Track, current: Boolean, onClick: () -> Unit, showArt: Boolean = true, number: Int? = null, endPad: Int = 16) {
     val cs = MaterialTheme.colorScheme
+    // long press: play next / add to queue / add to a playlist
+    val vm = LocalVm.current
+    var menu by remember { mutableStateOf(false) }
+    if (vm != null) Box {
+        DropdownMenu(menu, { menu = false }) { SongActionItems(vm, listOf(t)) { menu = false } }
+    }
     Row(
         Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .combinedClickable(onClick = onClick, onLongClick = if (vm != null) ({ menu = true }) else null)
             .background(if (current) cs.secondaryContainer else cs.background)
             .padding(start = 16.dp, end = endPad.dp, top = 8.dp, bottom = 8.dp),
         verticalAlignment = Alignment.CenterVertically,

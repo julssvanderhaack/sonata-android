@@ -63,7 +63,7 @@ import io.github.julssvanderhaack.sonata.library.sectionOf
 
 private enum class Tab(val label: Int) {
     SONGS(R.string.tab_songs), ALBUMS(R.string.tab_albums), ARTISTS(R.string.tab_artists),
-    FOLDERS(R.string.tab_folders), GENRES(R.string.tab_genres),
+    PLAYLISTS(R.string.tab_playlists), FOLDERS(R.string.tab_folders), GENRES(R.string.tab_genres),
 }
 
 private val SongSort.label
@@ -185,6 +185,7 @@ fun LibraryScreen(vm: MainViewModel) {
                 Tab.ALBUMS -> AlbumGrid(lib.albums, { vm.open(Route.AlbumDetail(it.key)) }, 0)
                 Tab.ARTISTS -> ArtistList(lib.artists, { vm.open(Route.ArtistDetail(it.key)) }, 0)
                 Tab.GENRES -> GenreList(lib.genres, { vm.open(Route.GenreDetail(it.name)) }, 0)
+                Tab.PLAYLISTS -> PlaylistsTab(vm)
                 Tab.FOLDERS -> FolderList(lib.folders, emptyList(), now.trackId, { vm.open(Route.Folder(it.key)) }, {}, 0)
             }
         }

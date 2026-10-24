@@ -80,7 +80,7 @@ fun AlbumScreen(vm: MainViewModel, key: String) {
     val lib by vm.library.collectAsStateWithLifecycle()
     val now by vm.nowPlaying.collectAsStateWithLifecycle()
     val album = lib.albums.firstOrNull { it.key == key } ?: return Missing(vm::back)
-    BackScaffold(album.title, vm::back) { pad ->
+    BackScaffold(album.title, vm::back, actions = { CollectionMenu(vm, album.tracks) }) { pad ->
         Column(Modifier.padding(pad)) {
             SongList(
                 songs = album.tracks,
@@ -118,7 +118,7 @@ fun ArtistScreen(vm: MainViewModel, key: String) {
     val lib by vm.library.collectAsStateWithLifecycle()
     val now by vm.nowPlaying.collectAsStateWithLifecycle()
     val artist = lib.artists.firstOrNull { it.key == key } ?: return Missing(vm::back)
-    BackScaffold(artist.name ?: unknownArtist(), vm::back) { pad ->
+    BackScaffold(artist.name ?: unknownArtist(), vm::back, actions = { CollectionMenu(vm, artist.tracks) }) { pad ->
         Column(Modifier.padding(pad)) {
             SongList(
                 songs = artist.tracks,
@@ -161,7 +161,7 @@ fun GenreScreen(vm: MainViewModel, name: String) {
     val lib by vm.library.collectAsStateWithLifecycle()
     val now by vm.nowPlaying.collectAsStateWithLifecycle()
     val genre = lib.genres.firstOrNull { it.name == name } ?: return Missing(vm::back)
-    BackScaffold(genre.name, vm::back) { pad ->
+    BackScaffold(genre.name, vm::back, actions = { CollectionMenu(vm, genre.tracks) }) { pad ->
         Column(Modifier.padding(pad)) {
             SongList(
                 genre.tracks, now.trackId, { vm.player.play(genre.tracks, it) },
@@ -176,7 +176,7 @@ fun FolderScreen(vm: MainViewModel, key: String) {
     val lib by vm.library.collectAsStateWithLifecycle()
     val now by vm.nowPlaying.collectAsStateWithLifecycle()
     val node = lib.findFolder(key) ?: return Missing(vm::back)
-    BackScaffold(node.name, vm::back) { pad ->
+    BackScaffold(node.name, vm::back, actions = { CollectionMenu(vm, node.tracks) }) { pad ->
         Column(Modifier.padding(pad).fillMaxSize()) {
             FolderList(node.children, node.tracks, now.trackId, { vm.open(Route.Folder(it.key)) }, { vm.player.play(node.tracks, it) }, 0)
         }

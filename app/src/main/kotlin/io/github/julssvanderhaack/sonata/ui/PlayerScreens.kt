@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.Equalizer
 import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.Lyrics
@@ -126,6 +127,9 @@ fun NowPlayingScreen(vm: MainViewModel) {
             val spectrum = pane == NowPane.Spectrum
             IconButton(onClick = { vm.pane.value = if (spectrum) NowPane.Cover else NowPane.Spectrum }, colors = if (spectrum) on else IconButtonDefaults.iconButtonColors()) {
                 Icon(Icons.Rounded.GraphicEq, stringResource(R.string.spectrum))
+            }
+            IconButton(onClick = { vm.open(Route.Queue) }) {
+                Icon(Icons.AutoMirrored.Rounded.QueueMusic, stringResource(R.string.queue))
             }
             IconButton(onClick = { vm.open(Route.Equalizer) }, colors = if (eq.enabled) on else IconButtonDefaults.iconButtonColors()) {
                 Icon(Icons.Rounded.Equalizer, stringResource(R.string.equalizer))
